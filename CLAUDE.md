@@ -6,7 +6,7 @@ Whatnow is a task management app for people with ADHD and task paralysis. Users 
 ## Tech Stack
 - **Frontend:** Flutter (Dart), Riverpod state management, GoRouter navigation
 - **Backend:** Supabase (PostgreSQL, Auth, Edge Functions)
-- **Payments:** Currently Stripe (test mode) — evaluating RevenueCat for IAP
+- **Payments:** RevenueCat (IAP on iOS + Android)
 - **Analytics:** TBD (evaluating PostHog)
 - **Local DB:** Drift (offline support)
 - **Ads:** Google AdMob (test IDs currently)
@@ -19,7 +19,7 @@ Whatnow is a task management app for people with ADHD and task paralysis. Users 
 - `lib/config/` — Theme, environment, ranks, ad config
 - `lib/data/` — Drift database for offline cache
 - `lib/router/` — GoRouter configuration
-- `supabase/functions/` — Edge Functions (stripe-webhook)
+- `supabase/functions/` — Edge Functions
 - `store/` — Store listing copy and privacy policy
 
 ## Brand
@@ -29,6 +29,39 @@ Whatnow is a task management app for people with ADHD and task paralysis. Users 
 - **Tagline:** "Stop overthinking. Start doing."
 - **Bundle ID:** com.whatnow.app
 - **IMPORTANT:** The swipe feature is called **"What Now?"** — never "What Next?". All UI text, class names, file names, and references must use "What Now?" / `WhatNow`.
+
+## Pricing & Monetisation
+
+### Model: Hard Paywall with Limited Free Fallback
+**7-day trial → limited free with ads → premium subscription**
+
+| Phase | Access | Ads |
+|-------|--------|-----|
+| Trial (7 days) | Full app — all features | No ads |
+| Free (post-trial) | Task list + groups only | Banner ads |
+| Premium | Full app — all features | No ads |
+
+### Feature Split
+- **Premium-gated:** What Now swipe, Timer
+- **Always free:** Task list, Groups (join + create) — groups stay free to drive social/viral growth
+- **Future premium perks:** Streak freezes (unlimited), home screen widgets, custom themes, advanced analytics
+
+### Pricing (Single Tier)
+| Plan | UK Price |
+|------|----------|
+| Monthly | £3.99 |
+| Annual | £29.99 (~37% discount) |
+| Lifetime | £59.99 (early adopter offer, may be removed later) |
+
+- Positioned below Tiimo (£7.99/mo) and Finch (£4.99/mo)
+- Localisation: set GBP base → Apple/Google auto-generate → manually review top 10 markets
+- Lifetime reduces "subscription guilt" common with ADHD users
+
+### Payment Infrastructure
+- **Provider:** RevenueCat (`purchases_flutter` package)
+- **Why not Stripe:** Apple requires IAP for digital goods in mobile apps; Stripe browser checkout would be rejected
+- **Free tier:** RevenueCat is free up to $2,500/mo tracked revenue, then 1% revenue share
+- **`is_premium` field:** stays as local cache; source of truth = RevenueCat entitlements
 
 ## Working Process
 1. **Research first** — Every strategic decision gets researched with pros/cons before any code is written
@@ -128,9 +161,19 @@ Evolve existing groups into collaborative task management for events, households
 - [ ] CI/CD with GitHub Actions (analyze, test, build on every PR)
 
 ### Product Strategy (decide first)
-- [ ] Paywall model — what's free vs premium, pricing tiers
-- [ ] RevenueCat vs Stripe — IAP architecture decision
-- [ ] Price localisation per region
+- [x] Paywall model — 7-day trial → limited free with ads → premium (What Now swipe + Timer gated)
+- [x] RevenueCat for IAP (Stripe removed)
+- [x] Price localisation — £3.99/mo, £29.99/yr, £59.99 lifetime; GBP base with auto-localisation
+
+### Payment Implementation
+- [ ] Set up RevenueCat account + configure products
+- [ ] Add `purchases_flutter` to pubspec.yaml
+- [ ] Rewrite premium_provider.dart to use RevenueCat entitlements
+- [ ] Redesign premium_screen.dart as paywall with trial messaging
+- [ ] Remove stripe-webhook edge function
+- [ ] Configure products in App Store Connect + Google Play Console
+- [ ] Implement trial expiry → limited free mode transition
+- [ ] Add banner ads to post-trial free screens (task list, groups)
 
 ### User Experience (design second)
 - [ ] Customer onboarding flow — screens, data collected, personalisation
@@ -193,7 +236,7 @@ Evolve existing groups into collaborative task management for events, households
 ### Release (last)
 - [ ] Release builds (AAB + IPA)
 - [ ] Store submissions
-- [ ] Stripe test → live (or RevenueCat live)
+- [ ] RevenueCat live mode + verify entitlements
 
 ### Event Driven Groups (v2 — separate design phase)
 - [ ] Design: group task pool, claim/assign mechanics, status flow
@@ -209,14 +252,17 @@ _Update this section as decisions are made_
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-03-15 | Supabase for backend | Already in use, good free tier, auth + DB + edge functions |
-| 2026-03-15 | Stripe test mode set up | May be replaced by RevenueCat — Apple requires IAP for digital goods |
-| 2026-03-15 | 20-task free limit | Needs validation — discuss in paywall strategy |
+| 2026-03-15 | ~~Stripe test mode set up~~ | Superseded — replaced by RevenueCat (2026-03-17) |
+| 2026-03-15 | ~~20-task free limit~~ | Superseded — replaced by hard paywall model (2026-03-17) |
+| 2026-03-17 | RevenueCat for IAP (remove Stripe) | Apple requires IAP for digital goods; Stripe browser checkout will be rejected. RevenueCat is free at current scale, handles receipts/lifecycle/localisation. |
+| 2026-03-17 | Hard paywall: 7-day trial → limited free with ads → premium | Research: 78% trial start rate. Free fallback = task list + groups with ads. Premium gates What Now swipe + timer. Groups free for viral growth. |
+| 2026-03-17 | £3.99/mo, £29.99/yr, £59.99 lifetime | Below competitors (Tiimo £7.99, Finch £4.99). Single tier reduces ADHD choice paralysis. Lifetime for subscription-anxious users. |
 
 ### Research-Backed Recommendations (2026-03-15)
 
 | Finding | Recommendation | Rationale |
 |---------|---------------|-----------|
-| Hard paywall > soft freemium | Consider 7-day free trial → paywall | 78% vs 45% trial starts; ADHD users need to experience value before deciding |
+| Hard paywall > soft freemium | **DECIDED:** 7-day trial → limited free with ads → premium | 78% vs 45% trial starts; free fallback with ads retains users who aren't ready to pay |
 | ADHD 40% higher abandonment | Prioritise onboarding above all else | First session must deliver a "wow" moment within 60 seconds |
 | Streaks reduce churn 35% | Add streak system before launch | Non-punishing (Finch-style) — compassionate messaging on missed days |
 | Social features 2.8x revenue | Leverage existing groups feature in marketing | Already built; highlight in store screenshots and onboarding |
