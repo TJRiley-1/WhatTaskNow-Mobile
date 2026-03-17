@@ -5,9 +5,10 @@ import '../providers/auth_provider.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/signup_screen.dart';
 import '../screens/home/home_shell.dart';
-import '../screens/home/what_now_screen.dart';
 import '../screens/home/tasks_screen.dart';
 import '../screens/home/profile_screen.dart';
+import '../screens/onboarding/onboarding_gate_screen.dart';
+import '../screens/onboarding/onboarding_flow.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/task/add_task_screen.dart';
 import '../screens/task/edit_task_screen.dart';
@@ -52,6 +53,11 @@ GoRouter createRouter(AuthNotifier authNotifier) {
       GoRoute(
         path: '/auth/signup',
         builder: (context, state) => const SignupScreen(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OnboardingFlow(),
       ),
       GoRoute(
         path: '/add-task',
@@ -110,7 +116,7 @@ GoRouter createRouter(AuthNotifier authNotifier) {
             routes: [
               GoRoute(
                 path: '/',
-                builder: (context, state) => const WhatNowScreen(),
+                builder: (context, state) => const OnboardingGateScreen(),
               ),
             ],
           ),
