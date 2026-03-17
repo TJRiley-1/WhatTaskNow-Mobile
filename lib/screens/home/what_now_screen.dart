@@ -19,7 +19,6 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
   Task? _chosenTask;
 
   void _onAccept(Task task) async {
-    // Increment times_shown on the task
     try {
       await ref.read(taskListProvider.notifier).updateTask(Task(
             id: task.id,
@@ -78,137 +77,163 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final tasksAsync = ref.watch(filteredTasksProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('What Now?'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.tune),
-            onPressed: () => _showFilterSheet(context),
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const BannerAdWidget(),
-          Expanded(child: tasksAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Error: $error')),
-        data: (tasks) {
-          if (_chosenTask != null) {
-            return _ChosenView(
-              task: _chosenTask!,
-              onReset: _reset,
-            );
-          }
-
-          if (tasks.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.inbox_outlined,
-                        size: 64, color: theme.colorScheme.outline),
-                    const SizedBox(height: 16),
-                    Text('No tasks match your filters',
-                        style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    Text('Try adjusting filters or add more tasks',
-                        style: theme.textTheme.bodyMedium),
-                    const SizedBox(height: 16),
-                    TextButton(
-                      onPressed: () =>
-                          ref.read(filterProvider.notifier).clearAll(),
-                      child: const Text('Clear Filters'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          if (_currentIndex >= tasks.length) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.refresh,
-                        size: 64, color: theme.colorScheme.outline),
-                    const SizedBox(height: 16),
-                    Text("You've seen all tasks",
-                        style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _reset,
-                      child: const Text('Start Over'),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          final task = tasks[_currentIndex];
-
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-            child: Column(
-              children: [
-                // Progress indicator
-                Text(
-                  '${_currentIndex + 1} of ${tasks.length}',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: theme.colorScheme.outline),
-                ),
-                const SizedBox(height: 16),
-
-                Expanded(
-                  child: Center(
-                    child: SwipeCard(
-                      key: ValueKey(task.id),
-                      task: task,
-                      onAccept: () => _onAccept(task),
-                      onSkip: () => _onSkip(task),
-                    ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const BannerAdWidget(),
+            // Custom header
+            Padding(
+              padding:
+                  const EdgeInsets.fromLTRB(24, 16, 16, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('What Now?',
+                      style: theme.appBarTheme.titleTextStyle),
+                  IconButton(
+                    icon: Icon(Icons.tune_rounded,
+                        color: cs.onSurfaceVariant),
+                    onPressed: () => _showFilterSheet(context),
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Button fallbacks for accessibility
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    OutlinedButton.icon(
-                      onPressed: () => _onSkip(task),
-                      icon: const Icon(Icons.close),
-                      label: const Text('Skip'),
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size(140, 52),
-                      ),
-                    ),
-                    FilledButton.icon(
-                      onPressed: () => _onAccept(task),
-                      icon: const Icon(Icons.check),
-                      label: const Text("Let's Go"),
-                      style: FilledButton.styleFrom(
-                        minimumSize: const Size(140, 52),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
-          );
-        },
-      )),
-        ],
+            Expanded(
+              child: tasksAsync.when(
+                loading: () =>
+                    const Center(child: CircularProgressIndicator()),
+                error: (error, _) =>
+                    Center(child: Text('Error: $error')),
+                data: (tasks) {
+                  if (_chosenTask != null) {
+                    return _ChosenView(
+                      task: _chosenTask!,
+                      onReset: _reset,
+                    );
+                  }
+
+                  if (tasks.isEmpty) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.inbox_outlined,
+                                size: 56,
+                                color: cs.onSurfaceVariant
+                                    .withValues(alpha: 0.3)),
+                            const SizedBox(height: 20),
+                            Text('No tasks match your filters',
+                                style: theme.textTheme.titleMedium),
+                            const SizedBox(height: 8),
+                            Text('Try adjusting filters or add more tasks',
+                                style: theme.textTheme.bodyMedium),
+                            const SizedBox(height: 20),
+                            TextButton(
+                              onPressed: () =>
+                                  ref.read(filterProvider.notifier).clearAll(),
+                              child: const Text('Clear Filters'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (_currentIndex >= tasks.length) {
+                    return Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.refresh_rounded,
+                                size: 56,
+                                color: cs.onSurfaceVariant
+                                    .withValues(alpha: 0.3)),
+                            const SizedBox(height: 20),
+                            Text("You've seen all tasks",
+                                style: theme.textTheme.titleMedium),
+                            const SizedBox(height: 20),
+                            FilledButton(
+                              onPressed: _reset,
+                              style: FilledButton.styleFrom(
+                                  minimumSize: const Size(180, 48)),
+                              child: const Text('Start Over'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final task = tasks[_currentIndex];
+
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 8),
+                        // Progress
+                        Text(
+                          '${_currentIndex + 1} of ${tasks.length}',
+                          style: theme.textTheme.labelMedium,
+                        ),
+                        const SizedBox(height: 16),
+
+                        Expanded(
+                          child: Center(
+                            child: SwipeCard(
+                              key: ValueKey(task.id),
+                              task: task,
+                              onAccept: () => _onAccept(task),
+                              onSkip: () => _onSkip(task),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Action buttons — subtle text style
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 96),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () => _onSkip(task),
+                                icon: Icon(Icons.close_rounded,
+                                    color: cs.onSurfaceVariant, size: 20),
+                                label: Text('Later',
+                                    style: TextStyle(
+                                        color: cs.onSurfaceVariant,
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                              FilledButton.icon(
+                                onPressed: () => _onAccept(task),
+                                icon: const Icon(Icons.check_rounded,
+                                    size: 20),
+                                label: const Text("Let's Go"),
+                                style: FilledButton.styleFrom(
+                                  minimumSize: const Size(140, 48),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -217,6 +242,10 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (context) => DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.6,
@@ -238,55 +267,71 @@ class _ChosenView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final timeLabel =
         task.time >= 60 ? '${task.time ~/ 60}hr' : '${task.time}min';
 
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.rocket_launch,
-                size: 48, color: theme.colorScheme.primary),
-            const SizedBox(height: 16),
-            Text("Let's do it!", style: theme.textTheme.titleLarge),
-            const SizedBox(height: 24),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    Text(task.name,
-                        style: theme.textTheme.titleMedium,
+            Icon(Icons.rocket_launch_rounded,
+                size: 48, color: cs.secondary),
+            const SizedBox(height: 12),
+            Text("Let's do it!",
+                style: theme.textTheme.titleLarge?.copyWith(
+                    color: cs.secondary)),
+            const SizedBox(height: 28),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: cs.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: cs.outline),
+              ),
+              child: Column(
+                children: [
+                  Text(task.name,
+                      style: theme.textTheme.titleMedium,
+                      textAlign: TextAlign.center),
+                  if (task.description != null) ...[
+                    const SizedBox(height: 10),
+                    Text(task.description!,
+                        style: theme.textTheme.bodyMedium,
                         textAlign: TextAlign.center),
-                    if (task.description != null) ...[
-                      const SizedBox(height: 8),
-                      Text(task.description!,
-                          style: theme.textTheme.bodyMedium,
-                          textAlign: TextAlign.center),
-                    ],
-                    const SizedBox(height: 16),
-                    Text('Estimated time: $timeLabel',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.primary)),
                   ],
-                ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(timeLabel,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        )),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 28),
             FilledButton.icon(
               onPressed: () => context.push('/timer', extra: task),
-              icon: const Icon(Icons.play_arrow),
+              icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('Start Task'),
               style: FilledButton.styleFrom(
-                  minimumSize: const Size(200, 52)),
+                  minimumSize: const Size(220, 52)),
             ),
             const SizedBox(height: 12),
-            OutlinedButton(
+            TextButton(
               onPressed: onReset,
-              style:
-                  OutlinedButton.styleFrom(minimumSize: const Size(200, 52)),
               child: const Text('Pick Another'),
             ),
           ],
@@ -322,6 +367,18 @@ class _FilterSheet extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.onSurfaceVariant
+                    .withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -335,10 +392,10 @@ class _FilterSheet extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
 
           Text('Time Available', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             runSpacing: 8,
@@ -352,10 +409,10 @@ class _FilterSheet extends ConsumerWidget {
             }).toList(),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           Text('Max Social Battery', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             children: [
@@ -372,10 +429,10 @@ class _FilterSheet extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 24),
 
           Text('Max Energy Level', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Wrap(
             spacing: 8,
             children: [
@@ -392,9 +449,9 @@ class _FilterSheet extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
 
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Apply'),
           ),

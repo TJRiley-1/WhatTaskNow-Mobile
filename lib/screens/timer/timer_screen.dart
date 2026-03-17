@@ -8,7 +8,6 @@ import '../../config/ranks.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/task_provider.dart';
-import '../../widgets/common/app_button.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
   final Task task;
@@ -66,7 +65,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     final points = _calculatePoints(task);
 
     try {
-      // Insert completed task record
       await Supabase.instance.client.from('completed_tasks').insert({
         'user_id': user.id,
         'task_name': task.name,
@@ -78,7 +76,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         'task_energy': task.energy.name,
       });
 
-      // Update profile points
       final profile = await Supabase.instance.client
           .from('profiles')
           .select('total_points, total_tasks_completed, total_time_spent')
@@ -93,11 +90,11 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
         'total_tasks_completed':
             (profile['total_tasks_completed'] as int) + 1,
         'total_time_spent':
-            (profile['total_time_spent'] as int) + (timeSpent > 0 ? timeSpent : task.time),
+            (profile['total_time_spent'] as int) +
+                (timeSpent > 0 ? timeSpent : task.time),
         'current_rank': newRank,
       }).eq('id', user.id);
 
-      // Update task stats
       await ref.read(taskListProvider.notifier).updateTask(Task(
             id: task.id,
             userId: task.userId,
@@ -153,79 +150,125 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final progress = 1 - (_secondsRemaining / (widget.task.time * 60));
+    final ringColor = isDark ? const Color(0xFFD4A853) : cs.primary;
 
     return Scaffold(
-      appBar: AppBar(title: Text(widget.task.name)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 200,
-                height: 200,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    CircularProgressIndicator(
-                      value: progress,
-                      strokeWidth: 12,
-                      backgroundColor:
-                          theme.colorScheme.surfaceContainerHighest,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Back button + task name
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 24, 0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.arrow_back_rounded,
+                        color: cs.onSurfaceVariant),
+                    onPressed: () => context.pop(),
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      widget.task.name,
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    Center(
-                      child: Text(
-                        _formatTime(_secondsRemaining),
-                        style: theme.textTheme.titleLarge
-                            ?.copyWith(fontSize: 40),
+                  ),
+                ],
+              ),
+            ),
+
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Timer ring
+                      SizedBox(
+                        width: 220,
+                        height: 220,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          children: [
+                            CircularProgressIndicator(
+                              value: progress,
+                              strokeWidth: 10,
+                              strokeCap: StrokeCap.round,
+                              backgroundColor: cs.surfaceContainerHighest,
+                              color: ringColor,
+                            ),
+                            Center(
+                              child: Text(
+                                _formatTime(_secondsRemaining),
+                                style: TextStyle(
+                                  fontSize: 44,
+                                  fontWeight: FontWeight.w700,
+                                  color: cs.onSurface,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
+
+                      const SizedBox(height: 16),
+                      Text(
+                        widget.task.name,
+                        style: theme.textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 40),
+
+                      if (_completed) ...[
+                        Icon(Icons.celebration_rounded,
+                            size: 48, color: cs.primary),
+                        const SizedBox(height: 16),
+                        Text("Time's up!",
+                            style: theme.textTheme.titleMedium),
+                        const SizedBox(height: 24),
+                        FilledButton(
+                          onPressed: _markComplete,
+                          style: FilledButton.styleFrom(
+                              minimumSize: const Size(220, 52)),
+                          child: const Text('Complete Task'),
+                        ),
+                      ] else ...[
+                        if (!_running)
+                          FilledButton.icon(
+                            onPressed: _start,
+                            icon: const Icon(Icons.play_arrow_rounded),
+                            label: const Text('Start'),
+                            style: FilledButton.styleFrom(
+                                minimumSize: const Size(180, 52)),
+                          )
+                        else
+                          OutlinedButton.icon(
+                            onPressed: _pause,
+                            icon: const Icon(Icons.pause_rounded),
+                            label: const Text('Pause'),
+                            style: OutlinedButton.styleFrom(
+                                minimumSize: const Size(180, 52)),
+                          ),
+                        const SizedBox(height: 16),
+                        TextButton(
+                          onPressed: _markComplete,
+                          child: const Text('Done Early'),
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 40),
-              if (_completed) ...[
-                Icon(Icons.celebration,
-                    size: 48, color: theme.colorScheme.primary),
-                const SizedBox(height: 16),
-                Text("Time's up!", style: theme.textTheme.titleMedium),
-                const SizedBox(height: 24),
-                AppButton(
-                  label: 'Complete Task',
-                  onPressed: _markComplete,
-                ),
-              ] else ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    if (!_running)
-                      FilledButton.icon(
-                        onPressed: _start,
-                        icon: const Icon(Icons.play_arrow),
-                        label: const Text('Start'),
-                        style: FilledButton.styleFrom(
-                            minimumSize: const Size(140, 52)),
-                      )
-                    else
-                      OutlinedButton.icon(
-                        onPressed: _pause,
-                        icon: const Icon(Icons.pause),
-                        label: const Text('Pause'),
-                        style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(140, 52)),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: _markComplete,
-                  child: const Text('Done Early'),
-                ),
-              ],
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
