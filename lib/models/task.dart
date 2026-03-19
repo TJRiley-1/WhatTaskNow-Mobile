@@ -102,6 +102,9 @@ class Task {
     required this.updatedAt,
   });
 
+  /// Whether this task is considered "done" (completed at least once, non-recurring).
+  bool get isCompleted => timesCompleted > 0 && recurring == Recurring.none;
+
   /// The parsed TaskType enum. Custom types map to [TaskType.other].
   TaskType get type => TaskType.fromString(typeRaw);
 
@@ -162,6 +165,10 @@ class Task {
       'energy': energy.name,
       'due_date': dueDate?.toIso8601String().split('T').first,
       'recurring': recurring.name,
+      'times_shown': timesShown,
+      'times_skipped': timesSkipped,
+      'times_completed': timesCompleted,
+      'points_earned': pointsEarned,
       'updated_at': DateTime.now().toUtc().toIso8601String(),
     };
   }

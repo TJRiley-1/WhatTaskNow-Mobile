@@ -18,7 +18,6 @@ class WhatNowScreen extends ConsumerStatefulWidget {
 
 class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
   int _currentIndex = 0;
-  Task? _chosenTask;
 
   void _onAccept(Task task) async {
     try {
@@ -35,13 +34,140 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
             recurring: task.recurring,
             timesShown: task.timesShown + 1,
             timesSkipped: task.timesSkipped,
-            timesCompleted: task.timesCompleted,
+            timesCompleted: task.timesCompleted + 1,
             pointsEarned: task.pointsEarned,
             createdAt: task.createdAt,
             updatedAt: DateTime.now().toUtc(),
           ));
     } catch (_) {}
-    setState(() => _chosenTask = task);
+    if (mounted) _showChosenSheet(task);
+  }
+
+  void _showChosenSheet(Task task) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gold = const Color(0xFFC9A84C);
+    final timeLabel =
+        task.time >= 60 ? '${task.time ~/ 60}hr' : '${task.time}min';
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: cs.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Icon(Icons.rocket_launch_rounded, size: 40, color: gold),
+              const SizedBox(height: 10),
+              Text("Let's do it!",
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    color: gold,
+                  )),
+              const SizedBox(height: 20),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? cs.surfaceContainerHighest
+                      : const Color(0xFFFAF8F3),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
+                    Text(task.name,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
+                        textAlign: TextAlign.center),
+                    if (task.description != null) ...[
+                      const SizedBox(height: 8),
+                      Text(task.description!,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          textAlign: TextAlign.center),
+                    ],
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: gold.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(timeLabel,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: gold,
+                          )),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/timer', extra: task);
+                  },
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: const Text('Start Task'),
+                  style: FilledButton.styleFrom(
+                    backgroundColor:
+                        isDark ? gold : cs.onSurface,
+                    foregroundColor:
+                        isDark ? cs.onPrimary : Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    textStyle: GoogleFonts.dmSans(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _reset();
+                },
+                child: Text('Pick Another',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      color: cs.onSurfaceVariant,
+                    )),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   void _onSkip(Task task) async {
@@ -71,7 +197,6 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
   void _reset() {
     setState(() {
       _currentIndex = 0;
-      _chosenTask = null;
     });
     ref.invalidate(taskListProvider);
   }
@@ -90,6 +215,15 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
     final isDark = theme.brightness == Brightness.dark;
     final tasksAsync = ref.watch(filteredTasksProvider);
     final user = ref.watch(currentUserProvider);
+
+    // Reset swipe index when filters change
+    ref.listen(filterProvider, (prev, next) {
+      if (prev != next) {
+        setState(() {
+          _currentIndex = 0;
+        });
+      }
+    });
     final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
 
     // Extract display name from user metadata or email
@@ -202,21 +336,95 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
             // Category filter chips
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _FilterChip(
-                    label: 'All',
-                    selected: true,
-                    onTap: () {},
-                  ),
-                  ...TaskType.values.map((type) => _FilterChip(
-                        label: type.label,
-                        selected: false,
-                        onTap: () {},
-                      )),
-                ],
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final filters = ref.watch(filterProvider);
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    alignment: WrapAlignment.center,
+                    children: [
+                      _FilterChip(
+                        label: 'All',
+                        selected: filters.taskType == null,
+                        onTap: () => ref
+                            .read(filterProvider.notifier)
+                            .setTaskType(null),
+                      ),
+                      ...TaskType.values
+                          .where((t) => t != TaskType.other)
+                          .map((type) => _FilterChip(
+                                label: type.label,
+                                selected: filters.taskType == type,
+                                onTap: () => ref
+                                    .read(filterProvider.notifier)
+                                    .setTaskType(type),
+                              )),
+                    ],
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Energy + Social filters
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final filters = ref.watch(filterProvider);
+                  final timeLabel = filters.maxTime != null
+                      ? (filters.maxTime! >= 60
+                          ? '${filters.maxTime! ~/ 60}hr'
+                          : '${filters.maxTime}min')
+                      : null;
+                  return Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _CycleFilterPill(
+                            icon: Icons.bolt_rounded,
+                            label: 'Energy',
+                            displayValue:
+                                filters.maxEnergy?.label ?? 'Any',
+                            isActive: filters.maxEnergy != null,
+                            onTap: () => ref
+                                .read(filterProvider.notifier)
+                                .cycleEnergy(),
+                          ),
+                          const SizedBox(width: 8),
+                          _CycleFilterPill(
+                            icon: Icons.people_outline_rounded,
+                            label: 'Social',
+                            displayValue:
+                                filters.maxSocial?.label ?? 'Any',
+                            isActive: filters.maxSocial != null,
+                            onTap: () => ref
+                                .read(filterProvider.notifier)
+                                .cycleSocial(),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _CycleFilterPill(
+                            icon: Icons.timer_outlined,
+                            label: 'Time',
+                            displayValue: timeLabel ?? 'Any',
+                            isActive: filters.maxTime != null,
+                            onTap: () => ref
+                                .read(filterProvider.notifier)
+                                .cycleTime(),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
@@ -230,13 +438,6 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
                 error: (error, _) =>
                     Center(child: Text('Error: $error')),
                 data: (tasks) {
-                  if (_chosenTask != null) {
-                    return _ChosenView(
-                      task: _chosenTask!,
-                      onReset: _reset,
-                    );
-                  }
-
                   if (tasks.isEmpty) {
                     return Center(
                       child: Padding(
@@ -344,7 +545,6 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
                               ),
                               const SizedBox(width: 12),
                               Expanded(
-                                flex: 2,
                                 child: FilledButton(
                                   onPressed: () => _onAccept(task),
                                   style: FilledButton.styleFrom(
@@ -427,95 +627,63 @@ class _FilterChip extends StatelessWidget {
   }
 }
 
-class _ChosenView extends StatelessWidget {
-  final Task task;
-  final VoidCallback onReset;
+class _CycleFilterPill extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String displayValue;
+  final bool isActive;
+  final VoidCallback onTap;
 
-  const _ChosenView({required this.task, required this.onReset});
+  const _CycleFilterPill({
+    required this.icon,
+    required this.label,
+    required this.displayValue,
+    required this.isActive,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
-    final timeLabel =
-        task.time >= 60 ? '${task.time ~/ 60}hr' : '${task.time}min';
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const gold = Color(0xFFC9A84C);
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.rocket_launch_rounded, size: 48, color: gold),
-          const SizedBox(height: 12),
-          Text("Let's do it!",
-              style: GoogleFonts.playfairDisplay(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  color: gold)),
-          const SizedBox(height: 28),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: cs.surface,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.3)
-                      : Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isActive ? gold.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isActive ? gold.withValues(alpha: 0.4) : cs.outline,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isActive ? gold : cs.onSurfaceVariant,
             ),
-            child: Column(
-              children: [
-                Text(task.name,
-                    style: theme.textTheme.titleMedium,
-                    textAlign: TextAlign.center),
-                if (task.description != null) ...[
-                  const SizedBox(height: 10),
-                  Text(task.description!,
-                      style: theme.textTheme.bodyMedium,
-                      textAlign: TextAlign.center),
-                ],
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: gold.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(timeLabel,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: gold,
-                      )),
-                ),
-              ],
+            const SizedBox(width: 6),
+            Text(
+              '$label: $displayValue',
+              style: GoogleFonts.dmSans(
+                fontSize: 12,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                color: isActive
+                    ? (isDark ? gold : cs.onSurface)
+                    : cs.onSurfaceVariant,
+              ),
             ),
-          ),
-          const SizedBox(height: 28),
-          FilledButton.icon(
-            onPressed: () => context.push('/timer', extra: task),
-            icon: const Icon(Icons.play_arrow_rounded),
-            label: const Text('Start Task'),
-            style: FilledButton.styleFrom(
-                minimumSize: const Size(220, 52)),
-          ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: onReset,
-            child: const Text('Pick Another'),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
 
