@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 
 class OnboardingEnergyPage extends StatefulWidget {
@@ -48,6 +49,8 @@ class _OnboardingEnergyPageState extends State<OnboardingEnergyPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return FadeTransition(
       opacity: _fadeController,
       child: Padding(
@@ -58,18 +61,18 @@ class _OnboardingEnergyPageState extends State<OnboardingEnergyPage>
             const SizedBox(height: 24),
             Text(
               "How's your energy right now?",
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               "We'll match tasks to how you're feeling.",
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 40),
@@ -110,18 +113,30 @@ class _EnergyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: isSelected
-            ? OnboardingTheme.teal.withValues(alpha: 0.1)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+            ? OnboardingTheme.gold.withValues(alpha: 0.1)
+            : cs.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? OnboardingTheme.teal : Colors.transparent,
+          color: isSelected ? OnboardingTheme.gold : Colors.transparent,
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -134,7 +149,9 @@ class _EnergyCard extends StatelessWidget {
               children: [
                 Icon(
                   isSelected ? Icons.check_circle : icon,
-                  color: isSelected ? OnboardingTheme.teal : OnboardingTheme.navy,
+                  color: isSelected
+                      ? OnboardingTheme.gold
+                      : cs.onSurfaceVariant,
                   size: 32,
                 ),
                 const SizedBox(width: 16),
@@ -144,18 +161,18 @@ class _EnergyCard extends StatelessWidget {
                     children: [
                       Text(
                         label,
-                        style: TextStyle(
+                        style: GoogleFonts.dmSans(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
-                          color: OnboardingTheme.navy,
+                          color: cs.onSurface,
                         ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         description,
-                        style: TextStyle(
+                        style: GoogleFonts.dmSans(
                           fontSize: 14,
-                          color: OnboardingTheme.grey,
+                          color: cs.onSurfaceVariant,
                         ),
                       ),
                     ],

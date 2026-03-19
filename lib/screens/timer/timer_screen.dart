@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/task.dart';
 import '../../config/ranks.dart';
@@ -153,13 +154,13 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final progress = 1 - (_secondsRemaining / (widget.task.time * 60));
-    final ringColor = isDark ? const Color(0xFFD4A853) : cs.primary;
+    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // Back button + task name
+            // Back button
             Padding(
               padding: const EdgeInsets.fromLTRB(8, 8, 24, 0),
               child: Row(
@@ -168,15 +169,6 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                     icon: Icon(Icons.arrow_back_rounded,
                         color: cs.onSurfaceVariant),
                     onPressed: () => context.pop(),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      widget.task.name,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                          fontWeight: FontWeight.w600),
-                      overflow: TextOverflow.ellipsis,
-                    ),
                   ),
                 ],
               ),
@@ -189,7 +181,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Timer ring
+                      // Timer ring with gold stroke
                       SizedBox(
                         width: 220,
                         height: 220,
@@ -201,13 +193,14 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                               strokeWidth: 10,
                               strokeCap: StrokeCap.round,
                               backgroundColor: cs.surfaceContainerHighest,
-                              color: ringColor,
+                              color: gold,
                             ),
+                            // Playfair time display inside ring
                             Center(
                               child: Text(
                                 _formatTime(_secondsRemaining),
-                                style: TextStyle(
-                                  fontSize: 44,
+                                style: GoogleFonts.playfairDisplay(
+                                  fontSize: 28,
                                   fontWeight: FontWeight.w700,
                                   color: cs.onSurface,
                                   letterSpacing: 2,
@@ -218,10 +211,16 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
+
+                      // Task name in Playfair
                       Text(
                         widget.task.name,
-                        style: theme.textTheme.bodyMedium,
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
+                          color: cs.onSurface,
+                        ),
                         textAlign: TextAlign.center,
                       ),
 
@@ -229,38 +228,55 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
 
                       if (_completed) ...[
                         Icon(Icons.celebration_rounded,
-                            size: 48, color: cs.primary),
+                            size: 48, color: gold),
                         const SizedBox(height: 16),
                         Text("Time's up!",
-                            style: theme.textTheme.titleMedium),
+                            style: GoogleFonts.playfairDisplay(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w600,
+                              color: cs.onSurface,
+                            )),
                         const SizedBox(height: 24),
-                        FilledButton(
+                        _CircleButton(
+                          label: 'Complete Task',
+                          filled: true,
                           onPressed: _markComplete,
-                          style: FilledButton.styleFrom(
-                              minimumSize: const Size(220, 52)),
-                          child: const Text('Complete Task'),
                         ),
                       ] else ...[
-                        if (!_running)
-                          FilledButton.icon(
-                            onPressed: _start,
-                            icon: const Icon(Icons.play_arrow_rounded),
-                            label: const Text('Start'),
-                            style: FilledButton.styleFrom(
-                                minimumSize: const Size(180, 52)),
-                          )
-                        else
-                          OutlinedButton.icon(
-                            onPressed: _pause,
-                            icon: const Icon(Icons.pause_rounded),
-                            label: const Text('Pause'),
-                            style: OutlinedButton.styleFrom(
-                                minimumSize: const Size(180, 52)),
+                        // Circular control buttons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            if (_running) ...[
+                              _CircleButton(
+                                label: 'Pause',
+                                icon: Icons.pause_rounded,
+                                filled: false,
+                                onPressed: _pause,
+                              ),
+                            ] else ...[
+                              _CircleButton(
+                                label: 'Start',
+                                icon: Icons.play_arrow_rounded,
+                                filled: true,
+                                onPressed: _start,
+                              ),
+                            ],
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        // "Done Early" as subtle text link
+                        GestureDetector(
+                          onTap: _markComplete,
+                          child: Text(
+                            'Done Early',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              color: cs.onSurfaceVariant,
+                              decoration: TextDecoration.underline,
+                              decorationColor: cs.onSurfaceVariant,
+                            ),
                           ),
-                        const SizedBox(height: 16),
-                        TextButton(
-                          onPressed: _markComplete,
-                          child: const Text('Done Early'),
                         ),
                       ],
                     ],
@@ -270,6 +286,63 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _CircleButton extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool filled;
+  final VoidCallback onPressed;
+
+  const _CircleButton({
+    required this.label,
+    this.icon,
+    required this.filled,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
+
+    final bgColor = filled
+        ? (isDark ? gold : cs.onSurface)
+        : Colors.transparent;
+    final fgColor = filled
+        ? (isDark ? cs.onPrimary : Colors.white)
+        : cs.onSurface;
+    final borderColor = filled ? Colors.transparent : cs.outline;
+
+    return GestureDetector(
+      onTap: onPressed,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: bgColor,
+              border: Border.all(color: borderColor, width: 2),
+            ),
+            child: Icon(icon ?? Icons.check_rounded, size: 28, color: fgColor),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

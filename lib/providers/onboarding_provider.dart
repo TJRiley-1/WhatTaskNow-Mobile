@@ -48,16 +48,15 @@ final onboardingProvider =
 class OnboardingNotifier extends Notifier<OnboardingState> {
   @override
   OnboardingState build() {
-    _restoreStep();
     return const OnboardingState();
   }
 
-  Future<void> _restoreStep() async {
+  /// Call once from the flow widget's initState to restore saved progress.
+  Future<int> restoreStep() async {
     final prefs = await SharedPreferences.getInstance();
     final step = prefs.getInt('onboarding_step') ?? 0;
-    if (step > 0) {
-      state = state.copyWith(currentPage: step);
-    }
+    state = state.copyWith(currentPage: step);
+    return step;
   }
 
   Future<void> _saveStep(int step) async {
@@ -98,13 +97,17 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
       final user = ref.read(currentUserProvider);
       if (user == null) return;
 
-      // Save to Supabase
-      await Supabase.instance.client.from('profiles').update({
-        'onboarding_completed': true,
-        'onboarding_goal': state.goal,
-        'preferred_categories': state.selectedCategories.toList(),
-        'onboarding_completed_at': DateTime.now().toUtc().toIso8601String(),
-      }).eq('id', user.id);
+      // Save to Supabase (best-effort — don't block if columns don't exist yet)
+      try {
+        await Supabase.instance.client.from('profiles').update({
+          'onboarding_completed': true,
+          'onboarding_goal': state.goal,
+          'preferred_categories': state.selectedCategories.toList(),
+          'onboarding_completed_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', user.id);
+      } catch (_) {
+        // Migration may not be applied yet — continue anyway
+      }
 
       // Save local preferences
       final prefs = await SharedPreferences.getInstance();
@@ -112,6 +115,7 @@ class OnboardingNotifier extends Notifier<OnboardingState> {
         await prefs.setString('default_energy_filter', state.energyLevel!);
       }
       await prefs.setBool('wants_notifications', state.wantsNotifications);
+      await prefs.setBool('onboarding_completed', true);
       await prefs.remove('onboarding_step');
 
       // Refresh profile so the gate picks up the change

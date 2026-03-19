@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 
 class OnboardingWelcomePage extends StatefulWidget {
@@ -27,7 +28,6 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
       duration: const Duration(milliseconds: 600),
     );
 
-    // Start card animation, then fade in text
     _cardController.forward();
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) _fadeController.forward();
@@ -43,6 +43,9 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 32),
       child: Column(
@@ -50,7 +53,7 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
         children: [
           const Spacer(flex: 2),
 
-          // Animated card stack → single card
+          // Animated card stack
           SizedBox(
             height: 200,
             child: AnimatedBuilder(
@@ -70,20 +73,20 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
               children: [
                 Text(
                   'WHAT NOW?',
-                  style: TextStyle(
+                  style: GoogleFonts.playfairDisplay(
                     fontSize: 36,
                     fontWeight: FontWeight.w800,
-                    color: OnboardingTheme.navy,
+                    color: cs.onSurface,
                     letterSpacing: 2,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Text(
                   'Stop overthinking. Start doing.',
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w400,
-                    color: OnboardingTheme.navy.withValues(alpha: 0.7),
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -101,12 +104,13 @@ class _OnboardingWelcomePageState extends State<OnboardingWelcomePage>
               child: FilledButton(
                 onPressed: widget.onContinue,
                 style: FilledButton.styleFrom(
-                  backgroundColor: OnboardingTheme.orange,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? OnboardingTheme.gold : cs.onSurface,
+                  foregroundColor: isDark ? cs.onPrimary : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -130,7 +134,6 @@ class _CardStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 3 cards that collapse into 1 centered card
     final curve = Curves.easeInOut.transform(progress);
 
     return Stack(
@@ -141,7 +144,8 @@ class _CardStack extends StatelessWidget {
           offset: Offset(-60.0 * (1 - curve), -20.0 * (1 - curve)),
           child: Transform.rotate(
             angle: -0.15 * (1 - curve),
-            child: _buildCard(OnboardingTheme.teal.withValues(alpha: 0.3 + 0.7 * curve)),
+            child: _buildCard(
+                OnboardingTheme.goldLight.withValues(alpha: 0.3 + 0.7 * curve)),
           ),
         ),
         // Back card (right)
@@ -149,11 +153,12 @@ class _CardStack extends StatelessWidget {
           offset: Offset(60.0 * (1 - curve), -10.0 * (1 - curve)),
           child: Transform.rotate(
             angle: 0.12 * (1 - curve),
-            child: _buildCard(OnboardingTheme.orange.withValues(alpha: 0.3 + 0.7 * curve)),
+            child: _buildCard(
+                OnboardingTheme.gold.withValues(alpha: 0.3 + 0.7 * curve)),
           ),
         ),
         // Front card (center)
-        _buildCard(OnboardingTheme.orange),
+        _buildCard(OnboardingTheme.gold),
       ],
     );
   }

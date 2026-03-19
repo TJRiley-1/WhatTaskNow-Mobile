@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/task.dart';
 import '../../providers/filter_provider.dart';
 import '../../providers/task_provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/swipe_card.dart';
 
@@ -74,34 +76,153 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
     ref.invalidate(taskListProvider);
   }
 
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final tasksAsync = ref.watch(filteredTasksProvider);
+    final user = ref.watch(currentUserProvider);
+    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
+
+    // Extract display name from user metadata or email
+    final displayName = user?.userMetadata?['display_name'] as String? ??
+        user?.email?.split('@').first ??
+        'there';
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
             const BannerAdWidget(),
-            // Custom header
+
+            // Greeting header
             Padding(
-              padding:
-                  const EdgeInsets.fromLTRB(24, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('What Now?',
-                      style: theme.appBarTheme.titleTextStyle),
-                  IconButton(
-                    icon: Icon(Icons.tune_rounded,
-                        color: cs.onSurfaceVariant),
-                    onPressed: () => _showFilterSheet(context),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _greeting(),
+                          style: GoogleFonts.dmSans(
+                            fontSize: 14,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          displayName,
+                          style: GoogleFonts.playfairDisplay(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            color: cs.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Gold avatar
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [gold, const Color(0xFFE8C96A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: Center(
+                      child: Text(
+                        displayName[0].toUpperCase(),
+                        style: GoogleFonts.playfairDisplay(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // Streak bar (placeholder)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: gold.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: gold.withValues(alpha: 0.15)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.local_fire_department_rounded,
+                        size: 18, color: gold),
+                    const SizedBox(width: 8),
+                    Text(
+                      '0 day streak',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: gold,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Keep going!',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Category filter chips
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _FilterChip(
+                    label: 'All',
+                    selected: true,
+                    onTap: () {},
+                  ),
+                  ...TaskType.values.map((type) => _FilterChip(
+                        label: type.label,
+                        selected: false,
+                        onTap: () {},
+                      )),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 8),
+
+            // Main content
             Expanded(
               child: tasksAsync.when(
                 loading: () =>
@@ -179,18 +300,14 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
                     child: Column(
                       children: [
                         const SizedBox(height: 8),
-                        // Progress
-                        Text(
-                          '${_currentIndex + 1} of ${tasks.length}',
-                          style: theme.textTheme.labelMedium,
-                        ),
-                        const SizedBox(height: 16),
 
                         Expanded(
                           child: Center(
                             child: SwipeCard(
                               key: ValueKey(task.id),
                               task: task,
+                              currentIndex: _currentIndex,
+                              totalCount: tasks.length,
                               onAccept: () => _onAccept(task),
                               onSkip: () => _onSkip(task),
                             ),
@@ -199,28 +316,50 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Action buttons — subtle text style
+                        // Action row: ghost "Later" left, filled "Done" right
                         Padding(
-                          padding: const EdgeInsets.only(bottom: 96),
+                          padding: const EdgeInsets.only(bottom: 16),
                           child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              TextButton.icon(
-                                onPressed: () => _onSkip(task),
-                                icon: Icon(Icons.close_rounded,
-                                    color: cs.onSurfaceVariant, size: 20),
-                                label: Text('Later',
-                                    style: TextStyle(
-                                        color: cs.onSurfaceVariant,
-                                        fontWeight: FontWeight.w500)),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => _onSkip(task),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(0, 48),
+                                    foregroundColor: cs.onSurfaceVariant,
+                                    side: BorderSide(
+                                        color: cs.outline),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text('←'),
+                                      const SizedBox(width: 6),
+                                      Text('Later',
+                                          style: GoogleFonts.dmSans(
+                                              fontWeight: FontWeight.w500)),
+                                    ],
+                                  ),
+                                ),
                               ),
-                              FilledButton.icon(
-                                onPressed: () => _onAccept(task),
-                                icon: const Icon(Icons.check_rounded,
-                                    size: 20),
-                                label: const Text("Let's Go"),
-                                style: FilledButton.styleFrom(
-                                  minimumSize: const Size(140, 48),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                flex: 2,
+                                child: FilledButton(
+                                  onPressed: () => _onAccept(task),
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size(0, 48),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text('Done',
+                                          style: GoogleFonts.dmSans(
+                                              fontWeight: FontWeight.w600)),
+                                      const SizedBox(width: 6),
+                                      const Text('✓'),
+                                    ],
+                                  ),
                                 ),
                               ),
                             ],
@@ -237,22 +376,52 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
       ),
     );
   }
+}
 
-  void _showFilterSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.85,
-        minChildSize: 0.4,
-        builder: (context, scrollController) =>
-            _FilterSheet(scrollController: scrollController),
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFFC9A84C) : cs.onSurface)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected
+                  ? Colors.transparent
+                  : cs.outline,
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? (isDark ? cs.onPrimary : Colors.white)
+                  : cs.onSurfaceVariant,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -268,196 +437,85 @@ class _ChosenView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
     final timeLabel =
         task.time >= 60 ? '${task.time ~/ 60}hr' : '${task.time}min';
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.rocket_launch_rounded,
-                size: 48, color: cs.secondary),
-            const SizedBox(height: 12),
-            Text("Let's do it!",
-                style: theme.textTheme.titleLarge?.copyWith(
-                    color: cs.secondary)),
-            const SizedBox(height: 28),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: cs.surface,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: cs.outline),
-              ),
-              child: Column(
-                children: [
-                  Text(task.name,
-                      style: theme.textTheme.titleMedium,
-                      textAlign: TextAlign.center),
-                  if (task.description != null) ...[
-                    const SizedBox(height: 10),
-                    Text(task.description!,
-                        style: theme.textTheme.bodyMedium,
-                        textAlign: TextAlign.center),
-                  ],
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(timeLabel,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: cs.primary,
-                        )),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
-            FilledButton.icon(
-              onPressed: () => context.push('/timer', extra: task),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('Start Task'),
-              style: FilledButton.styleFrom(
-                  minimumSize: const Size(220, 52)),
-            ),
-            const SizedBox(height: 12),
-            TextButton(
-              onPressed: onReset,
-              child: const Text('Pick Another'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FilterSheet extends ConsumerWidget {
-  final ScrollController scrollController;
-
-  const _FilterSheet({required this.scrollController});
-
-  static const _timeOptions = [
-    (null, 'Any'),
-    (15, '15min'),
-    (30, '30min'),
-    (60, '1hr'),
-    (120, '2hr'),
-  ];
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final theme = Theme.of(context);
-    final filters = ref.watch(filterProvider);
-    final notifier = ref.read(filterProvider.notifier);
-
     return SingleChildScrollView(
-      controller: scrollController,
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 20),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurfaceVariant
-                    .withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(2),
-              ),
+          Icon(Icons.rocket_launch_rounded, size: 48, color: gold),
+          const SizedBox(height: 12),
+          Text("Let's do it!",
+              style: GoogleFonts.playfairDisplay(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w700,
+                  color: gold)),
+          const SizedBox(height: 28),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: cs.surface,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: [
+                Text(task.name,
+                    style: theme.textTheme.titleMedium,
+                    textAlign: TextAlign.center),
+                if (task.description != null) ...[
+                  const SizedBox(height: 10),
+                  Text(task.description!,
+                      style: theme.textTheme.bodyMedium,
+                      textAlign: TextAlign.center),
+                ],
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: gold.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(timeLabel,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: gold,
+                      )),
+                ),
+              ],
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('Filters', style: theme.textTheme.titleMedium),
-              TextButton(
-                onPressed: () {
-                  notifier.clearAll();
-                  Navigator.pop(context);
-                },
-                child: const Text('Clear All'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          Text('Time Available', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _timeOptions.map((opt) {
-              final (value, label) = opt;
-              return ChoiceChip(
-                label: Text(label),
-                selected: filters.maxTime == value,
-                onSelected: (_) => notifier.setMaxTime(value),
-              );
-            }).toList(),
-          ),
-
-          const SizedBox(height: 24),
-
-          Text('Max Social Battery', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Any'),
-                selected: filters.maxSocial == null,
-                onSelected: (_) => notifier.setMaxSocial(null),
-              ),
-              ...Level.values.map((l) => ChoiceChip(
-                    label: Text(l.label),
-                    selected: filters.maxSocial == l,
-                    onSelected: (_) => notifier.setMaxSocial(l),
-                  )),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
-          Text('Max Energy Level', style: theme.textTheme.bodyLarge),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: [
-              ChoiceChip(
-                label: const Text('Any'),
-                selected: filters.maxEnergy == null,
-                onSelected: (_) => notifier.setMaxEnergy(null),
-              ),
-              ...Level.values.map((l) => ChoiceChip(
-                    label: Text(l.label),
-                    selected: filters.maxEnergy == l,
-                    onSelected: (_) => notifier.setMaxEnergy(l),
-                  )),
-            ],
-          ),
-
           const SizedBox(height: 28),
-
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Apply'),
+          FilledButton.icon(
+            onPressed: () => context.push('/timer', extra: task),
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Start Task'),
+            style: FilledButton.styleFrom(
+                minimumSize: const Size(220, 52)),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onReset,
+            child: const Text('Pick Another'),
+          ),
         ],
       ),
     );
   }
 }
+

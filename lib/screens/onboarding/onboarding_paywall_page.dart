@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 
 class OnboardingPaywallPage extends StatefulWidget {
@@ -40,7 +41,7 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
   String get _subtitle {
     return switch (widget.goal) {
       'task_paralysis' =>
-        'The What Now? swipe was made for people who struggle to pick what to do.',
+        'What Now? was made for people who struggle to pick what to do.',
       'focus' =>
         'The focus timer helps you stay on track once you pick a task.',
       'memory' =>
@@ -53,6 +54,9 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return FadeTransition(
       opacity: _fadeController,
       child: SingleChildScrollView(
@@ -64,19 +68,19 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
             Text(
               'Try Whatnow Premium\nfree for 7 days',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 12),
             Text(
               _subtitle,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 32),
@@ -87,13 +91,13 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
                   child: Row(
                     children: [
                       Icon(Icons.check_circle,
-                          color: OnboardingTheme.teal, size: 22),
+                          color: OnboardingTheme.gold, size: 22),
                       const SizedBox(width: 12),
                       Text(
                         f,
-                        style: TextStyle(
+                        style: GoogleFonts.dmSans(
                           fontSize: 16,
-                          color: OnboardingTheme.navy,
+                          color: cs.onSurface,
                         ),
                       ),
                     ],
@@ -134,12 +138,13 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
               child: FilledButton(
                 onPressed: widget.onStartTrial,
                 style: FilledButton.styleFrom(
-                  backgroundColor: OnboardingTheme.orange,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? OnboardingTheme.gold : cs.onSurface,
+                  foregroundColor: isDark ? cs.onPrimary : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -153,9 +158,9 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
               onPressed: widget.onContinueFree,
               child: Text(
                 'Continue with free plan',
-                style: TextStyle(
+                style: GoogleFonts.dmSans(
                   fontSize: 14,
-                  color: OnboardingTheme.grey,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ),
@@ -167,7 +172,7 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
   }
 
   static const _features = [
-    'What Now? swipe',
+    'Swipe to Choose',
     'Focus timer',
     'Unlimited tasks',
     'No ads',
@@ -191,17 +196,29 @@ class _PricingOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       decoration: BoxDecoration(
         color: isSelected
-            ? OnboardingTheme.orange.withValues(alpha: 0.08)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+            ? OnboardingTheme.gold.withValues(alpha: 0.08)
+            : cs.surface,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isSelected ? OnboardingTheme.orange : Colors.transparent,
+          color: isSelected ? OnboardingTheme.gold : Colors.transparent,
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -217,18 +234,18 @@ class _PricingOption extends StatelessWidget {
                       ? Icons.radio_button_checked
                       : Icons.radio_button_off,
                   color: isSelected
-                      ? OnboardingTheme.orange
-                      : OnboardingTheme.grey,
+                      ? OnboardingTheme.gold
+                      : cs.onSurfaceVariant,
                   size: 22,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     label,
-                    style: TextStyle(
+                    style: GoogleFonts.dmSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: OnboardingTheme.navy,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
@@ -237,15 +254,15 @@ class _PricingOption extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: OnboardingTheme.teal.withValues(alpha: 0.15),
+                      color: OnboardingTheme.gold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       badge!,
-                      style: TextStyle(
+                      style: GoogleFonts.dmSans(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: OnboardingTheme.teal,
+                        color: OnboardingTheme.gold,
                       ),
                     ),
                   ),
@@ -253,10 +270,10 @@ class _PricingOption extends StatelessWidget {
                 ],
                 Text(
                   price,
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: OnboardingTheme.navy,
+                    color: cs.onSurface,
                   ),
                 ),
               ],

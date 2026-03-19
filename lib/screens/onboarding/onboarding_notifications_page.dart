@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 
 class OnboardingNotificationsPage extends StatefulWidget {
@@ -33,6 +34,9 @@ class _OnboardingNotificationsPageState
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return FadeTransition(
       opacity: _fadeController,
       child: Padding(
@@ -43,18 +47,18 @@ class _OnboardingNotificationsPageState
             const SizedBox(height: 24),
             Text(
               'One last thing — reminders',
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Gentle reminders to keep you on track.',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const Spacer(flex: 2),
@@ -64,26 +68,30 @@ class _OnboardingNotificationsPageState
               child: Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: OnboardingTheme.teal.withValues(alpha: 0.1),
+                  color: OnboardingTheme.gold.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: OnboardingTheme.gold.withValues(alpha: 0.15)),
                 ),
                 child: Column(
                   children: [
                     Icon(
                       Icons.notifications_active_outlined,
                       size: 64,
-                      color: OnboardingTheme.teal,
+                      color: OnboardingTheme.gold,
                     ),
                     const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 20, vertical: 14),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.surface,
+                        color: cs.surface,
                         borderRadius: BorderRadius.circular(12),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.05),
+                            color: isDark
+                                ? Colors.black.withValues(alpha: 0.3)
+                                : Colors.black.withValues(alpha: 0.04),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -93,14 +101,14 @@ class _OnboardingNotificationsPageState
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(Icons.auto_awesome,
-                              size: 20, color: OnboardingTheme.orange),
+                              size: 20, color: OnboardingTheme.gold),
                           const SizedBox(width: 12),
                           Flexible(
                             child: Text(
                               "Hey, you've got this. Time for your next task.",
-                              style: TextStyle(
+                              style: GoogleFonts.dmSans(
                                 fontSize: 14,
-                                color: OnboardingTheme.navy,
+                                color: cs.onSurface,
                               ),
                             ),
                           ),
@@ -120,12 +128,13 @@ class _OnboardingNotificationsPageState
               child: FilledButton(
                 onPressed: () => widget.onSelected(true),
                 style: FilledButton.styleFrom(
-                  backgroundColor: OnboardingTheme.orange,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? OnboardingTheme.gold : cs.onSurface,
+                  foregroundColor: isDark ? cs.onPrimary : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -139,9 +148,9 @@ class _OnboardingNotificationsPageState
                 onPressed: () => widget.onSelected(false),
                 child: Text(
                   'Maybe later',
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     fontSize: 16,
-                    color: OnboardingTheme.grey,
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ),

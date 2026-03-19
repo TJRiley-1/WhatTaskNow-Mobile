@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 import '../../providers/onboarding_provider.dart';
 import 'onboarding_welcome_page.dart';
@@ -29,8 +30,13 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
   @override
   void initState() {
     super.initState();
-    final initialPage = ref.read(onboardingProvider).currentPage;
-    _pageController = PageController(initialPage: initialPage);
+    _pageController = PageController();
+    // Restore saved progress (if app was killed mid-flow)
+    ref.read(onboardingProvider.notifier).restoreStep().then((step) {
+      if (step > 0 && mounted) {
+        _pageController.jumpToPage(step);
+      }
+    });
   }
 
   @override
@@ -83,9 +89,9 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       child: LinearProgressIndicator(
                         value: (state.currentPage + 1) / _totalPages,
                         backgroundColor:
-                            OnboardingTheme.grey.withValues(alpha: 0.15),
+                            OnboardingTheme.gold.withValues(alpha: 0.15),
                         valueColor: const AlwaysStoppedAnimation<Color>(
-                            OnboardingTheme.orange),
+                            OnboardingTheme.gold),
                         minHeight: 4,
                       ),
                     ),
@@ -95,8 +101,8 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                       onPressed: _skip,
                       child: Text(
                         'Skip',
-                        style: TextStyle(
-                          color: OnboardingTheme.grey,
+                        style: GoogleFonts.dmSans(
+                          color: OnboardingTheme.textSecondary(context),
                           fontSize: 14,
                         ),
                       ),

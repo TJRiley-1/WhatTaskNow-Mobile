@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 import '../../models/task.dart';
 
@@ -50,6 +51,9 @@ class _OnboardingCategoriesPageState extends State<OnboardingCategoriesPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return FadeTransition(
       opacity: _fadeController,
       child: Padding(
@@ -60,18 +64,18 @@ class _OnboardingCategoriesPageState extends State<OnboardingCategoriesPage>
             const SizedBox(height: 24),
             Text(
               'What kind of tasks pile up?',
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Select all that apply — we\'ll suggest some starter tasks.',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 32),
@@ -101,13 +105,15 @@ class _OnboardingCategoriesPageState extends State<OnboardingCategoriesPage>
                     ? widget.onContinue
                     : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: OnboardingTheme.orange,
-                  foregroundColor: Colors.white,
-                  disabledBackgroundColor: OnboardingTheme.grey.withValues(alpha: 0.3),
+                  backgroundColor:
+                      isDark ? OnboardingTheme.gold : cs.onSurface,
+                  foregroundColor: isDark ? cs.onPrimary : Colors.white,
+                  disabledBackgroundColor:
+                      cs.onSurfaceVariant.withValues(alpha: 0.3),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -138,6 +144,9 @@ class _CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       child: Material(
@@ -150,14 +159,23 @@ class _CategoryChip extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             decoration: BoxDecoration(
               color: isSelected
-                  ? OnboardingTheme.orange.withValues(alpha: 0.1)
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  ? OnboardingTheme.gold.withValues(alpha: 0.1)
+                  : cs.surface,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color:
-                    isSelected ? OnboardingTheme.orange : Colors.transparent,
+                    isSelected ? OnboardingTheme.gold : Colors.transparent,
                 width: 2,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.3)
+                      : Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -166,16 +184,16 @@ class _CategoryChip extends StatelessWidget {
                   isSelected ? Icons.check_circle : icon,
                   size: 20,
                   color: isSelected
-                      ? OnboardingTheme.orange
-                      : OnboardingTheme.navy,
+                      ? OnboardingTheme.gold
+                      : cs.onSurfaceVariant,
                 ),
                 const SizedBox(width: 8),
                 Text(
                   label,
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: OnboardingTheme.navy,
+                    color: cs.onSurface,
                   ),
                 ),
               ],

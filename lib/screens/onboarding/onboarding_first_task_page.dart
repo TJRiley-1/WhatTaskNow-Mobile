@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 import '../../config/task_templates.dart';
 import '../../models/task.dart';
@@ -37,7 +38,6 @@ class _OnboardingFirstTaskPageState
       duration: const Duration(milliseconds: 500),
     )..forward();
 
-    // Pre-populate type from category selections
     final categories =
         ref.read(onboardingProvider).selectedCategories;
     if (categories.isNotEmpty) {
@@ -103,6 +103,8 @@ class _OnboardingFirstTaskPageState
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
     final suggestions = _suggestions;
 
     return FadeTransition(
@@ -115,23 +117,23 @@ class _OnboardingFirstTaskPageState
             const SizedBox(height: 24),
             Text(
               'Add your first task',
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               "Something small — you can always add more later.",
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 24),
 
-            // Task name input (autofocused)
+            // Task name input
             TextField(
               controller: _nameController,
               autofocus: true,
@@ -145,7 +147,7 @@ class _OnboardingFirstTaskPageState
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
                   borderSide: BorderSide(
-                      color: OnboardingTheme.orange, width: 2),
+                      color: OnboardingTheme.gold, width: 2),
                 ),
               ),
             ),
@@ -155,10 +157,10 @@ class _OnboardingFirstTaskPageState
             // Time estimate
             Text(
               'How long will it take?',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -170,7 +172,7 @@ class _OnboardingFirstTaskPageState
                   label: Text(label),
                   selected: _time == t,
                   onSelected: (_) => setState(() => _time = t),
-                  selectedColor: OnboardingTheme.orange.withValues(alpha: 0.2),
+                  selectedColor: OnboardingTheme.gold.withValues(alpha: 0.2),
                 );
               }).toList(),
             ),
@@ -180,10 +182,10 @@ class _OnboardingFirstTaskPageState
             // Energy level
             Text(
               'Energy needed?',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -201,10 +203,10 @@ class _OnboardingFirstTaskPageState
             if (suggestions.isNotEmpty) ...[
               Text(
                 'Or pick from suggestions',
-                style: TextStyle(
+                style: GoogleFonts.dmSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: OnboardingTheme.navy,
+                  color: cs.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
@@ -225,12 +227,13 @@ class _OnboardingFirstTaskPageState
               child: FilledButton(
                 onPressed: _isLoading ? null : _createTask,
                 style: FilledButton.styleFrom(
-                  backgroundColor: OnboardingTheme.orange,
-                  foregroundColor: Colors.white,
+                  backgroundColor:
+                      isDark ? OnboardingTheme.gold : cs.onSurface,
+                  foregroundColor: isDark ? cs.onPrimary : Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  textStyle: const TextStyle(
+                  textStyle: GoogleFonts.dmSans(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -263,6 +266,8 @@ class _TemplateTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
     final timeLabel =
         template.time >= 60 ? '${template.time ~/ 60}hr' : '${template.time}min';
 
@@ -274,28 +279,37 @@ class _TemplateTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
+            color: cs.surface,
             borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.04),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
               Icon(Icons.add_circle_outline,
-                  size: 20, color: OnboardingTheme.teal),
+                  size: 20, color: OnboardingTheme.gold),
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
                   template.name,
-                  style: TextStyle(
+                  style: GoogleFonts.dmSans(
                     fontSize: 15,
-                    color: OnboardingTheme.navy,
+                    color: cs.onSurface,
                   ),
                 ),
               ),
               Text(
                 timeLabel,
-                style: TextStyle(
+                style: GoogleFonts.dmSans(
                   fontSize: 13,
-                  color: OnboardingTheme.grey,
+                  color: cs.onSurfaceVariant,
                 ),
               ),
             ],

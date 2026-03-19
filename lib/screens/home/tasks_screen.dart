@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/task.dart';
 import '../../providers/premium_provider.dart';
 import '../../providers/task_provider.dart';
@@ -21,13 +22,18 @@ class TasksScreen extends ConsumerWidget {
         child: Column(
           children: [
             const BannerAdWidget(),
-            // Custom header
+            // Playfair heading
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 16, 16, 0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Tasks', style: theme.appBarTheme.titleTextStyle),
+                  Text('Tasks',
+                      style: GoogleFonts.playfairDisplay(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w700,
+                        color: cs.onSurface,
+                      )),
                   IconButton(
                     icon: Icon(Icons.upload_outlined,
                         color: cs.onSurfaceVariant),
@@ -37,6 +43,25 @@ class TasksScreen extends ConsumerWidget {
                 ],
               ),
             ),
+
+            // Filter chips row
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _ChipFilter(label: 'All', selected: true, onTap: () {}),
+                  ...TaskType.values.map((type) => _ChipFilter(
+                        label: type.label,
+                        selected: false,
+                        onTap: () {},
+                      )),
+                ],
+              ),
+            ),
+
             const SizedBox(height: 8),
             Expanded(
               child: tasksAsync.when(
@@ -96,17 +121,62 @@ class TasksScreen extends ConsumerWidget {
           ],
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 72),
-        child: FloatingActionButton(
-          onPressed: () {
-            if (canAdd) {
-              context.push('/add-task');
-            } else {
-              context.push('/premium');
-            }
-          },
-          child: Icon(canAdd ? Icons.add_rounded : Icons.lock_rounded),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          if (canAdd) {
+            context.push('/add-task');
+          } else {
+            context.push('/premium');
+          }
+        },
+        child: Icon(canAdd ? Icons.add_rounded : Icons.lock_rounded),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+}
+
+class _ChipFilter extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _ChipFilter({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected
+                ? (isDark ? const Color(0xFFC9A84C) : cs.onSurface)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: selected ? Colors.transparent : cs.outline,
+            ),
+          ),
+          child: Text(
+            label,
+            style: GoogleFonts.dmSans(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: selected
+                  ? (isDark ? cs.onPrimary : Colors.white)
+                  : cs.onSurfaceVariant,
+            ),
+          ),
         ),
       ),
     );
@@ -118,14 +188,14 @@ class _TaskCard extends StatelessWidget {
 
   const _TaskCard({required this.task});
 
-  Color _typeColor(TaskType type) {
+  IconData _typeIcon(TaskType type) {
     return switch (type) {
-      TaskType.work => const Color(0xFF4A90D9),
-      TaskType.personal => const Color(0xFF9B59B6),
-      TaskType.health => const Color(0xFF27AE60),
-      TaskType.social => const Color(0xFFE67E22),
-      TaskType.errand => const Color(0xFF1ABC9C),
-      TaskType.other => const Color(0xFF95A5A6),
+      TaskType.work => Icons.work_outline_rounded,
+      TaskType.personal => Icons.home_outlined,
+      TaskType.health => Icons.fitness_center_rounded,
+      TaskType.social => Icons.people_outline_rounded,
+      TaskType.errand => Icons.shopping_cart_outlined,
+      TaskType.other => Icons.push_pin_outlined,
     };
   }
 
@@ -133,9 +203,10 @@ class _TaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final timeLabel =
         task.time >= 60 ? '${task.time ~/ 60}hr' : '${task.time}min';
-    final typeColor = _typeColor(task.type);
+    final gold = isDark ? const Color(0xFFC9A84C) : const Color(0xFFC9A84C);
 
     return GestureDetector(
       onTap: () => context.push('/edit-task', extra: task),
@@ -143,91 +214,78 @@ class _TaskCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cs.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outline),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
+            // Emoji icon square
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: gold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Center(
+                child: Icon(_typeIcon(task.type), size: 22, color: gold),
+              ),
+            ),
+            const SizedBox(width: 14),
+            // Name + time
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
                     task.name,
-                    style: theme.textTheme.bodyLarge?.copyWith(
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: cs.onSurface,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: typeColor.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    task.typeLabel,
-                    style: TextStyle(
+                  const SizedBox(height: 3),
+                  Text(
+                    '$timeLabel  •  ${task.energy.label} energy',
+                    style: GoogleFonts.dmSans(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: typeColor,
+                      color: cs.onSurfaceVariant,
                     ),
                   ),
-                ),
-              ],
-            ),
-            if (task.description != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                task.description!,
-                style: theme.textTheme.bodyMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                ],
               ),
-            ],
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 12,
-              runSpacing: 4,
-              children: [
-                _MetaLabel(icon: Icons.timer_outlined, label: timeLabel),
-                _MetaLabel(
-                    icon: Icons.bolt_outlined,
-                    label: task.energy.label),
-                _MetaLabel(
-                    icon: Icons.people_outline,
-                    label: task.social.label),
-                if (task.recurring != Recurring.none)
-                  _MetaLabel(
-                      icon: Icons.repeat, label: task.recurring.label),
-              ],
+            ),
+            // Status badge
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: gold.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                task.typeLabel,
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: gold,
+                ),
+              ),
             ),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _MetaLabel extends StatelessWidget {
-  final IconData icon;
-  final String label;
-
-  const _MetaLabel({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    final color = Theme.of(context).colorScheme.onSurfaceVariant;
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 14, color: color),
-        const SizedBox(width: 3),
-        Text(label,
-            style: TextStyle(fontSize: 12, color: color)),
-      ],
     );
   }
 }

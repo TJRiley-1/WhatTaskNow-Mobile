@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'config/theme.dart';
 import 'providers/auth_provider.dart';
+import 'providers/theme_provider.dart';
 import 'router/app_router.dart';
 
 class WhatnowApp extends ConsumerStatefulWidget {
@@ -36,7 +37,7 @@ class _WhatnowAppState extends ConsumerState<WhatnowApp> {
       debugShowCheckedModeBanner: false,
       theme: lightTheme,
       darkTheme: darkTheme,
-      themeMode: ThemeMode.system,
+      themeMode: ref.watch(themeModeProvider),
       routerConfig: _router,
     );
   }

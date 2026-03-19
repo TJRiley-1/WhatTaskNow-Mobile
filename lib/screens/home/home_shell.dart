@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../providers/connectivity_provider.dart';
 
 class HomeShell extends ConsumerWidget {
@@ -26,8 +27,7 @@ class HomeShell extends ConsumerWidget {
           Expanded(child: navigationShell),
         ],
       ),
-      extendBody: true,
-      bottomNavigationBar: _FloatingNavBar(
+      bottomNavigationBar: _FlatNavBar(
         currentIndex: navigationShell.currentIndex,
         onTap: (index) {
           navigationShell.goBranch(index,
@@ -38,85 +38,86 @@ class HomeShell extends ConsumerWidget {
   }
 }
 
-class _FloatingNavBar extends StatelessWidget {
+class _FlatNavBar extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
 
-  const _FloatingNavBar({required this.currentIndex, required this.onTap});
+  const _FlatNavBar({required this.currentIndex, required this.onTap});
 
   static const _items = [
-    (icon: Icons.shuffle_rounded, label: 'What Now'),
-    (icon: Icons.checklist_rounded, label: 'Tasks'),
-    (icon: Icons.person_rounded, label: 'Profile'),
+    (icon: Icons.shuffle_rounded, label: 'WHAT NOW'),
+    (icon: Icons.checklist_rounded, label: 'TASKS'),
+    (icon: Icons.person_rounded, label: 'PROFILE'),
   ];
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = Theme.of(context).scaffoldBackgroundColor;
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
-      child: Container(
-        height: 64,
-        decoration: BoxDecoration(
-          color: isDark ? cs.surface : cs.surface,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: cs.outline),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-              blurRadius: 20,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(_items.length, (i) {
-            final selected = i == currentIndex;
-            final item = _items[i];
-            return GestureDetector(
-              onTap: () => onTap(i),
-              behavior: HitTestBehavior.opaque,
-              child: SizedBox(
-                width: 72,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? cs.primary.withValues(alpha: 0.15)
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Icon(
-                        item.icon,
-                        size: 24,
-                        color: selected ? cs.primary : cs.onSurfaceVariant,
-                      ),
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).padding.bottom + 8,
+        top: 8,
+      ),
+      color: bgColor,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: List.generate(_items.length, (i) {
+          final selected = i == currentIndex;
+          final item = _items[i];
+          final activeColor = isDark ? cs.gold : cs.onSurface;
+
+          return GestureDetector(
+            onTap: () => onTap(i),
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              width: 80,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? (isDark ? cs.gold : cs.onSurface)
+                          : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      item.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight:
-                            selected ? FontWeight.w600 : FontWeight.w400,
-                        color: selected ? cs.primary : cs.onSurfaceVariant,
-                      ),
+                    child: Icon(
+                      item.icon,
+                      size: 22,
+                      color: selected
+                          ? (isDark ? cs.onPrimary : Colors.white)
+                          : cs.onSurfaceVariant,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.label,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 9,
+                      fontWeight:
+                          selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? activeColor : cs.onSurfaceVariant,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ],
               ),
-            );
-          }),
-        ),
+            ),
+          );
+        }),
       ),
     );
   }
+}
+
+extension _GoldAccess on ColorScheme {
+  Color get gold => brightness == Brightness.dark
+      ? const Color(0xFFC9A84C)
+      : const Color(0xFFC9A84C);
 }

@@ -17,10 +17,9 @@ class GroupsScreen extends ConsumerWidget {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Groups')),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _showCreateOrJoin(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Join / Create'),
+        child: const Icon(Icons.add),
       ),
       body: groupsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),

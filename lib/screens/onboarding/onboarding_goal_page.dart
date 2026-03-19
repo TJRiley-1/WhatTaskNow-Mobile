@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
 
 class OnboardingGoalPage extends StatefulWidget {
@@ -55,7 +56,7 @@ class _OnboardingGoalPageState extends State<OnboardingGoalPage>
   }
 
   void _select(String key) {
-    if (_selected != null) return; // prevent double-tap
+    if (_selected != null) return;
     setState(() => _selected = key);
     HapticFeedback.lightImpact();
     Future.delayed(const Duration(milliseconds: 400), () {
@@ -65,6 +66,8 @@ class _OnboardingGoalPageState extends State<OnboardingGoalPage>
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return FadeTransition(
       opacity: _fadeController,
       child: Padding(
@@ -75,18 +78,18 @@ class _OnboardingGoalPageState extends State<OnboardingGoalPage>
             const SizedBox(height: 24),
             Text(
               'What brings you here?',
-              style: TextStyle(
+              style: GoogleFonts.playfairDisplay(
                 fontSize: 28,
                 fontWeight: FontWeight.w700,
-                color: OnboardingTheme.navy,
+                color: cs.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'No wrong answers — this helps us personalise your experience.',
-              style: TextStyle(
+              style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: OnboardingTheme.grey,
+                color: cs.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 32),
@@ -125,18 +128,30 @@ class _GoalCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = OnboardingTheme.isDark(context);
+
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
       decoration: BoxDecoration(
         color: isSelected
-            ? OnboardingTheme.orange.withValues(alpha: 0.1)
-            : Theme.of(context).colorScheme.surfaceContainerHighest,
+            ? OnboardingTheme.gold.withValues(alpha: 0.1)
+            : cs.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? OnboardingTheme.orange : Colors.transparent,
+          color: isSelected ? OnboardingTheme.gold : Colors.transparent,
           width: 2,
         ),
+        boxShadow: [
+          BoxShadow(
+            color: isDark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Material(
         color: Colors.transparent,
@@ -149,17 +164,19 @@ class _GoalCard extends StatelessWidget {
               children: [
                 Icon(
                   isSelected ? Icons.check_circle : icon,
-                  color: isSelected ? OnboardingTheme.orange : OnboardingTheme.teal,
+                  color: isSelected
+                      ? OnboardingTheme.gold
+                      : cs.onSurfaceVariant,
                   size: 28,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     title,
-                    style: TextStyle(
+                    style: GoogleFonts.dmSans(
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
-                      color: OnboardingTheme.navy,
+                      color: cs.onSurface,
                     ),
                   ),
                 ),
