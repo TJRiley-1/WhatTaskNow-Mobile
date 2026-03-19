@@ -240,16 +240,16 @@ class ProfileScreen extends ConsumerWidget {
 
                   const SizedBox(height: 16),
 
-                  // Theme toggle
-                  _ThemeToggle(),
-                  const SizedBox(height: 10),
-
                   // Settings items
                   _SettingsItem(
                     icon: Icons.group_rounded,
                     label: 'Groups & Leaderboards',
                     onTap: () => context.push('/groups'),
                   ),
+                  const SizedBox(height: 10),
+
+                  // Theme toggle
+                  _ThemeToggle(),
                   if (!profile.isPremium) ...[
                     const SizedBox(height: 10),
                     _SettingsItem(
