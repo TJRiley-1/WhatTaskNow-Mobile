@@ -31,7 +31,14 @@ class UserGroupsNotifier extends AsyncNotifier<List<Group>> {
     return groups.map((json) => Group.fromJson(json)).toList();
   }
 
-  Future<void> createGroup(String name, String? description) async {
+  Future<void> createGroup({
+    required String name,
+    String? description,
+    required GroupType groupType,
+    DateTime? eventDate,
+    LeaderboardPeriod leaderboardPeriod = LeaderboardPeriod.weekly,
+    LeaderboardMetric leaderboardMetric = LeaderboardMetric.points,
+  }) async {
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 
@@ -44,6 +51,10 @@ class UserGroupsNotifier extends AsyncNotifier<List<Group>> {
           'description': description,
           'invite_code': inviteCode,
           'created_by': user.id,
+          'group_type': groupType.dbValue,
+          'event_date': eventDate?.toIso8601String(),
+          'leaderboard_period': leaderboardPeriod.name,
+          'leaderboard_metric': leaderboardMetric.name,
         })
         .select()
         .single();
@@ -51,6 +62,7 @@ class UserGroupsNotifier extends AsyncNotifier<List<Group>> {
     await _client.from('group_members').insert({
       'group_id': groupData['id'],
       'user_id': user.id,
+      'role': 'admin',
     });
 
     ref.invalidateSelf();
@@ -80,6 +92,7 @@ class UserGroupsNotifier extends AsyncNotifier<List<Group>> {
     await _client.from('group_members').insert({
       'group_id': groupId,
       'user_id': user.id,
+      'role': 'member',
     });
 
     ref.invalidateSelf();
@@ -98,16 +111,44 @@ class UserGroupsNotifier extends AsyncNotifier<List<Group>> {
 
     ref.invalidateSelf();
   }
+
+  Future<void> promoteToAdmin(String groupId, String userId) async {
+    await _client
+        .from('group_members')
+        .update({'role': 'admin'})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
+  Future<void> removeFromGroup(String groupId, String userId) async {
+    await _client
+        .from('group_members')
+        .delete()
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
+
+  Future<void> updateAssignmentPermission(
+      String groupId, String userId, bool allow) async {
+    await _client
+        .from('group_members')
+        .update({'allow_task_assignment': allow})
+        .eq('group_id', groupId)
+        .eq('user_id', userId);
+  }
 }
 
+/// Leaderboard provider using parameterised RPC
 final leaderboardProvider =
-    FutureProvider.family<List<LeaderboardEntry>, String>(
-        (ref, groupId) async {
-  final data = await Supabase.instance.client
-      .from('weekly_leaderboard')
-      .select()
-      .eq('group_id', groupId)
-      .order('weekly_points', ascending: false);
+    FutureProvider.family<List<LeaderboardEntry>, ({String groupId, String period, String metric})>(
+        (ref, params) async {
+  final data = await Supabase.instance.client.rpc('get_group_leaderboard', params: {
+    'p_group_id': params.groupId,
+    'p_period': params.period,
+    'p_metric': params.metric,
+  });
 
-  return data.map((json) => LeaderboardEntry.fromJson(json)).toList();
+  return (data as List)
+      .map((json) => LeaderboardEntry.fromJson(json as Map<String, dynamic>))
+      .toList();
 });

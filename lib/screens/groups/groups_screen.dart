@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../models/group.dart';
 import '../../providers/group_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../widgets/common/app_button.dart';
 import '../../widgets/common/app_text_field.dart';
 
@@ -83,12 +85,19 @@ class _GroupCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    const gold = Color(0xFFC9A84C);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => context.push('/leaderboard', extra: group),
+        onTap: () {
+          if (group.isEventDriven) {
+            context.push('/group-detail', extra: group);
+          } else {
+            context.push('/leaderboard', extra: group);
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -106,8 +115,36 @@ class _GroupCard extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(group.name,
-                        style: theme.textTheme.titleMedium),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(group.name,
+                              style: theme.textTheme.titleMedium,
+                              overflow: TextOverflow.ellipsis),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: group.isEventDriven
+                                ? gold.withValues(alpha: 0.12)
+                                : theme.colorScheme.primaryContainer,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            group.groupType.label,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: group.isEventDriven
+                                  ? gold
+                                  : theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     if (group.description != null)
                       Text(group.description!,
                           style: theme.textTheme.bodySmall,
@@ -149,8 +186,15 @@ class _CreateOrJoinSheetState extends ConsumerState<_CreateOrJoinSheet> {
   final _codeController = TextEditingController();
   final _nameController = TextEditingController();
   final _descController = TextEditingController();
+
   bool _isCreate = false;
   bool _isLoading = false;
+
+  // Create-mode fields
+  GroupType _groupType = GroupType.friendsFamily;
+  LeaderboardPeriod _period = LeaderboardPeriod.weekly;
+  LeaderboardMetric _metric = LeaderboardMetric.points;
+  DateTime? _eventDate;
 
   @override
   void dispose() {
@@ -184,13 +228,31 @@ class _CreateOrJoinSheetState extends ConsumerState<_CreateOrJoinSheet> {
     final name = _nameController.text.trim();
     if (name.isEmpty) return;
 
+    // Premium gate for event groups
+    if (_groupType == GroupType.eventDriven) {
+      final isPremium = ref.read(isPremiumProvider);
+      if (!isPremium) {
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event groups require a premium subscription')),
+          );
+        }
+        return;
+      }
+    }
+
     setState(() => _isLoading = true);
     try {
       await ref.read(userGroupsProvider.notifier).createGroup(
-            name,
-            _descController.text.trim().isEmpty
+            name: name,
+            description: _descController.text.trim().isEmpty
                 ? null
                 : _descController.text.trim(),
+            groupType: _groupType,
+            eventDate: _groupType == GroupType.eventDriven ? _eventDate : null,
+            leaderboardPeriod: _period,
+            leaderboardMetric: _metric,
           );
       if (mounted) {
         Navigator.pop(context);
@@ -210,6 +272,7 @@ class _CreateOrJoinSheetState extends ConsumerState<_CreateOrJoinSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
@@ -247,6 +310,33 @@ class _CreateOrJoinSheetState extends ConsumerState<_CreateOrJoinSheet> {
             Text('Create New Group',
                 style: theme.textTheme.titleMedium),
             const SizedBox(height: 12),
+
+            // Group type selection
+            Text('Group Type',
+                style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurfaceVariant)),
+            const SizedBox(height: 6),
+            SegmentedButton<GroupType>(
+              segments: [
+                ButtonSegment(
+                  value: GroupType.friendsFamily,
+                  label: Text('Friends & Family',
+                      style: GoogleFonts.dmSans(fontSize: 12)),
+                ),
+                ButtonSegment(
+                  value: GroupType.eventDriven,
+                  label:
+                      Text('Event', style: GoogleFonts.dmSans(fontSize: 12)),
+                ),
+              ],
+              selected: {_groupType},
+              onSelectionChanged: (s) =>
+                  setState(() => _groupType = s.first),
+            ),
+
+            const SizedBox(height: 12),
             AppTextField(
               controller: _nameController,
               labelText: 'Group Name',
@@ -258,6 +348,94 @@ class _CreateOrJoinSheetState extends ConsumerState<_CreateOrJoinSheet> {
               labelText: 'Description (optional)',
               textInputAction: TextInputAction.done,
             ),
+
+            // Event-specific: event date
+            if (_groupType == GroupType.eventDriven) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: _eventDate ?? DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate:
+                        DateTime.now().add(const Duration(days: 365 * 2)),
+                  );
+                  if (picked != null) setState(() => _eventDate = picked);
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: cs.surface,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: cs.outline),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.event_rounded,
+                          size: 18, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 12),
+                      Text(
+                        _eventDate != null
+                            ? 'Event: ${_eventDate!.day}/${_eventDate!.month}/${_eventDate!.year}'
+                            : 'Set event date (optional)',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 15,
+                          color: _eventDate != null
+                              ? cs.onSurface
+                              : cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+
+            // F&F-specific: period + metric
+            if (_groupType == GroupType.friendsFamily) ...[
+              const SizedBox(height: 12),
+              Text('Leaderboard Period',
+                  style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              SegmentedButton<LeaderboardPeriod>(
+                segments: LeaderboardPeriod.values
+                    .map((p) => ButtonSegment(
+                          value: p,
+                          label: Text(p.label,
+                              style: GoogleFonts.dmSans(fontSize: 12)),
+                        ))
+                    .toList(),
+                selected: {_period},
+                onSelectionChanged: (s) =>
+                    setState(() => _period = s.first),
+              ),
+              const SizedBox(height: 12),
+              Text('Leaderboard Metric',
+                  style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurfaceVariant)),
+              const SizedBox(height: 6),
+              SegmentedButton<LeaderboardMetric>(
+                segments: LeaderboardMetric.values
+                    .map((m) => ButtonSegment(
+                          value: m,
+                          label: Text(m.label,
+                              style: GoogleFonts.dmSans(fontSize: 12)),
+                        ))
+                    .toList(),
+                selected: {_metric},
+                onSelectionChanged: (s) =>
+                    setState(() => _metric = s.first),
+              ),
+            ],
+
             const SizedBox(height: 20),
             AppButton(
               label: 'Create Group',

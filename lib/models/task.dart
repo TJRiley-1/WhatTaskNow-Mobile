@@ -79,6 +79,9 @@ class Task {
   final int timesSkipped;
   final int timesCompleted;
   final int pointsEarned;
+  final String? groupTaskId;
+  final String? groupId;
+  final String? groupName;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -98,9 +101,14 @@ class Task {
     this.timesSkipped = 0,
     this.timesCompleted = 0,
     this.pointsEarned = 0,
+    this.groupTaskId,
+    this.groupId,
+    this.groupName,
     required this.createdAt,
     required this.updatedAt,
   });
+
+  bool get isGroupTask => groupTaskId != null;
 
   /// Whether this task is considered "done" (completed at least once, non-recurring).
   bool get isCompleted => timesCompleted > 0 && recurring == Recurring.none;
@@ -136,6 +144,9 @@ class Task {
       timesSkipped: json['times_skipped'] as int? ?? 0,
       timesCompleted: json['times_completed'] as int? ?? 0,
       pointsEarned: json['points_earned'] as int? ?? 0,
+      groupTaskId: json['group_task_id'] as String?,
+      groupId: json['group_id'] as String?,
+      groupName: json['group_name'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
     );
@@ -152,6 +163,9 @@ class Task {
       'energy': energy.name,
       'due_date': dueDate?.toIso8601String().split('T').first,
       'recurring': recurring.name,
+      if (groupTaskId != null) 'group_task_id': groupTaskId,
+      if (groupId != null) 'group_id': groupId,
+      if (groupName != null) 'group_name': groupName,
     };
   }
 

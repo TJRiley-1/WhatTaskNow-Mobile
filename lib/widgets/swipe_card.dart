@@ -237,31 +237,64 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Category tag
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: goldDim,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(_typeIcon(task.type),
-                                      size: 14, color: gold),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    task.typeLabel.toUpperCase(),
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: gold,
-                                      letterSpacing: 1.5,
+                            // Group badge + Category tag
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                if (task.isGroupTask)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 10, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF2196F3)
+                                          .withValues(alpha: 0.12),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.group_outlined,
+                                            size: 13,
+                                            color: Color(0xFF2196F3)),
+                                        const SizedBox(width: 5),
+                                        Text(
+                                          task.groupName ?? 'Group',
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF2196F3),
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: goldDim,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(_typeIcon(task.type),
+                                          size: 14, color: gold),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        task.typeLabel.toUpperCase(),
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.w600,
+                                          color: gold,
+                                          letterSpacing: 1.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
 
                             const SizedBox(height: 20),

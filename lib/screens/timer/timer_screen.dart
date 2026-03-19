@@ -83,18 +83,27 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
           .eq('id', user.id)
           .single();
 
-      final newPoints = (profile['total_points'] as int) + points;
+      final newPoints = ((profile['total_points'] as int?) ?? 0) + points;
       final newRank = rankForPoints(newPoints);
 
       await Supabase.instance.client.from('profiles').update({
         'total_points': newPoints,
         'total_tasks_completed':
-            (profile['total_tasks_completed'] as int) + 1,
+            ((profile['total_tasks_completed'] as int?) ?? 0) + 1,
         'total_time_spent':
-            (profile['total_time_spent'] as int) +
+            ((profile['total_time_spent'] as int?) ?? 0) +
                 (timeSpent > 0 ? timeSpent : task.time),
         'current_rank': newRank,
       }).eq('id', user.id);
+
+      // If this is a group task, mark it done in group_tasks too
+      if (task.groupTaskId != null) {
+        await Supabase.instance.client.from('group_tasks').update({
+          'status': 'done',
+          'completed_at': DateTime.now().toUtc().toIso8601String(),
+          'updated_at': DateTime.now().toUtc().toIso8601String(),
+        }).eq('id', task.groupTaskId!);
+      }
 
       await ref.read(taskListProvider.notifier).updateTask(Task(
             id: task.id,

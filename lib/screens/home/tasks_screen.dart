@@ -632,6 +632,33 @@ class _TaskCard extends StatelessWidget {
                 ],
               ),
             ),
+            if (task.isGroupTask) ...[
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2196F3).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.group_outlined,
+                        size: 12, color: Color(0xFF2196F3)),
+                    const SizedBox(width: 3),
+                    Text(
+                      task.groupName ?? 'Group',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2196F3),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 6),
+            ],
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

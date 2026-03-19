@@ -17,9 +17,12 @@ import '../screens/timer/timer_screen.dart';
 import '../screens/celebration/celebration_screen.dart';
 import '../screens/groups/groups_screen.dart';
 import '../screens/groups/leaderboard_screen.dart';
+import '../screens/groups/group_detail_screen.dart';
+import '../screens/groups/add_group_task_screen.dart';
 import '../screens/premium/premium_screen.dart';
 import '../models/task.dart';
 import '../models/group.dart';
+import '../models/group_member.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -106,6 +109,23 @@ GoRouter createRouter(AuthNotifier authNotifier) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) =>
             LeaderboardScreen(group: state.extra! as Group),
+      ),
+      GoRoute(
+        path: '/group-detail',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) =>
+            GroupDetailScreen(group: state.extra! as Group),
+      ),
+      GoRoute(
+        path: '/add-group-task',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) {
+          final data = state.extra! as Map<String, dynamic>;
+          return AddGroupTaskScreen(
+            groupId: data['groupId'] as String,
+            members: data['members'] as List<GroupMember>,
+          );
+        },
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

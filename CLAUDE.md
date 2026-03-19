@@ -137,13 +137,13 @@ Whatnow is a task management app for people with ADHD and task paralysis. Users 
 - "Progress Ring" widget — circular progress for daily goal
 - Start with small (2×2) "Next Task" widget
 
-### Event Driven Groups (v2 Feature Concept)
-Evolve existing groups into collaborative task management for events, households, teams, friend groups.
-- **Core mechanics:** group task pool, task claiming ("I'll do this"), admin assignment, real-time status visibility
-- **Status flow:** Unclaimed → Claimed/Assigned → In Progress → Done
+### Event Driven Groups (Phase 1 IMPLEMENTED 2026-03-19)
+Two group types now live: **Event Driven** (premium-only creation) and **Friends & Family** (free).
+- **Core mechanics (done):** group task pool, task claiming, admin assignment, status visibility, role-based permissions (admin/member)
+- **Status flow:** Unassigned → Claimed → In Progress → Done
 - **Use cases:** party planning, household chores, team projects, ADHD accountability partners
-- **Technical scope:** new Supabase tables (group_tasks, group_members with roles), RLS, realtime subscriptions, invite system with deep links, push notifications
-- _Major feature — separate design phase required before implementation_
+- **Technical:** `group_tasks` table with RLS, `group_members` with roles, `get_group_leaderboard` RPC (parameterised period/metric), `sync_group_task_to_user` RPC, group tasks sync to personal task list
+- **Phase 2 remaining:** deep links, push notifications, realtime subscriptions, activity feed, advanced admin controls
 
 ### Price Localisation
 - Set GBP base price, use Apple/Google automatic localisation, manually review top 10 markets
@@ -238,13 +238,24 @@ Evolve existing groups into collaborative task management for events, households
 - [ ] Store submissions
 - [ ] RevenueCat live mode + verify entitlements
 
-### Event Driven Groups (v2 — separate design phase)
-- [ ] Design: group task pool, claim/assign mechanics, status flow
-- [ ] Design: invite system (email, WhatsApp, SMS, deep link)
-- [ ] Design: real-time visibility (who has what, status updates)
-- [ ] Implementation: Supabase tables, RLS, realtime subscriptions
-- [ ] Implementation: push notifications for group activity
-- _Note: Major feature — separate design phase required before implementation_
+### Groups Expansion — Phase 1 (DONE 2026-03-19)
+- [x] Database: `group_type`, `event_date`, `leaderboard_period`, `leaderboard_metric` on `groups`; `role`, `allow_task_assignment` on `group_members`; new `group_tasks` table with RLS; `group_task_id`/`group_id`/`group_name` on `tasks`
+- [x] Models: `GroupType`, `LeaderboardPeriod`, `LeaderboardMetric` enums; `GroupMember` model; `GroupTask` model with status enum; `Task` now has `isGroupTask` getter
+- [x] Providers: `groupMembersProvider`, `groupTasksProvider` (CRUD + 30s auto-refresh + sync RPC); leaderboard uses parameterised `get_group_leaderboard` RPC
+- [x] Event Driven Groups: group detail screen (tasks/members tabs), add group task form, assign/claim/start/done flow, task sync to personal list
+- [x] F&F Groups: configurable leaderboard period (weekly/monthly/quarterly) and metric (points/tasks/combined)
+- [x] Group cards show type badge, route to detail (event) or leaderboard (F&F)
+- [x] Create flow: type selection, premium gate on event group creation, period/metric config for F&F
+- [x] Personal task integration: group badge on task cards + swipe cards; timer syncs completion to `group_tasks`
+- [x] Invite sharing via `share_plus` package
+- [x] Routes: `/group-detail`, `/add-group-task`
+
+### Groups Expansion — Phase 2 (TODO)
+- [ ] Deep links for group invites (universal links iOS + app links Android)
+- [ ] Push notifications for group activity (task assigned, task completed, new member)
+- [ ] Activity feed on group detail screen
+- [ ] Advanced admin controls (edit group settings, transfer ownership)
+- [ ] Real-time updates via Supabase realtime subscriptions (replace 30s polling)
 
 ## Key Decisions Log
 _Update this section as decisions are made_
@@ -257,6 +268,7 @@ _Update this section as decisions are made_
 | 2026-03-17 | RevenueCat for IAP (remove Stripe) | Apple requires IAP for digital goods; Stripe browser checkout will be rejected. RevenueCat is free at current scale, handles receipts/lifecycle/localisation. |
 | 2026-03-17 | Hard paywall: 7-day trial → limited free with ads → premium | Research: 78% trial start rate. Free fallback = task list + groups with ads. Premium gates What Now swipe + timer. Groups free for viral growth. |
 | 2026-03-17 | £3.99/mo, £29.99/yr, £59.99 lifetime | Below competitors (Tiimo £7.99, Finch £4.99). Single tier reduces ADHD choice paralysis. Lifetime for subscription-anxious users. |
+| 2026-03-19 | Groups Expansion Phase 1: Event Driven + F&F leaderboard | Two group types: Event Driven (premium-only creation, task pool with assign/claim) and Friends & Family (free, configurable leaderboard). Group tasks sync to personal list. Phase 2 = deep links, push notifications, realtime. |
 
 ### Research-Backed Recommendations (2026-03-15)
 
