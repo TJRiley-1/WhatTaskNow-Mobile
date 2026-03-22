@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 class CelebrationScreen extends StatefulWidget {
@@ -71,6 +72,11 @@ class _CelebrationScreenState extends State<CelebrationScreen>
     }
 
     _fireworkController.forward();
+    // Celebration haptic burst
+    HapticFeedback.heavyImpact();
+    Future.delayed(const Duration(milliseconds: 200), () {
+      HapticFeedback.mediumImpact();
+    });
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _contentController.forward();
     });

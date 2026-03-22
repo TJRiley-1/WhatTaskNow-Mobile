@@ -157,7 +157,7 @@ Two group types now live: **Event Driven** (premium-only creation) and **Friends
 ### Testing & Quality (build confidence first)
 - [ ] Widget tests for core flows (add/edit/complete task, swipe card)
 - [ ] Integration tests with Patrol
-- [ ] Sentry crash reporting
+- [x] Sentry crash reporting — `sentry_flutter` wraps `main()`, DSN in `.env`, crash reporting + breadcrumbs enabled
 - [ ] CI/CD with GitHub Actions (analyze, test, build on every PR)
 
 ### Product Strategy (decide first)
@@ -166,14 +166,21 @@ Two group types now live: **Event Driven** (premium-only creation) and **Friends
 - [x] Price localisation — £3.99/mo, £29.99/yr, £59.99 lifetime; GBP base with auto-localisation
 
 ### Payment Implementation
-- [ ] Set up RevenueCat account + configure products
-- [ ] Add `purchases_flutter` to pubspec.yaml
-- [ ] Rewrite premium_provider.dart to use RevenueCat entitlements
-- [ ] Redesign premium_screen.dart as paywall with trial messaging
-- [ ] Remove stripe-webhook edge function
-- [ ] Configure products in App Store Connect + Google Play Console
-- [ ] Implement trial expiry → limited free mode transition
-- [ ] Add banner ads to post-trial free screens (task list, groups)
+- [x] Add `purchases_flutter` to pubspec.yaml
+- [x] Create `revenue_cat_service.dart` — init, purchase, restore, entitlement stream
+- [x] Rewrite `premium_provider.dart` to use RevenueCat entitlements (with Supabase fallback)
+- [x] Redesign `premium_screen.dart` as paywall with trial messaging + restore button
+- [x] Rewrite `onboarding_paywall_page.dart` — RC offerings, localised prices, purchase flow
+- [x] Remove `stripe-webhook` edge function + all Stripe references
+- [x] Remove `url_launcher` dependency (was only used for Stripe)
+- [x] Gate What Now swipe + Timer behind premium (`what_now_screen.dart`)
+- [x] Free users get unlimited tasks (removed `canAddTaskProvider` / `freeTaskLimit`)
+- [x] Trial banner widget (`trial_banner.dart`) — countdown + expired state
+- [x] Trial expiry → limited free mode transition (automatic via RC entitlements)
+- [x] Banner ads respect GDPR consent (`canShowAdsProvider`)
+- [ ] Set up RevenueCat account + configure products (external — needs RC dashboard)
+- [ ] Configure products in App Store Connect + Google Play Console (external)
+- [ ] Add RC API keys to `.env` (placeholders currently set)
 
 ### User Experience (design second)
 - [ ] Customer onboarding flow — screens, data collected, personalisation
@@ -182,7 +189,7 @@ Two group types now live: **Event Driven** (premium-only creation) and **Friends
 
 ### Engagement & Retention (design alongside UX)
 - [ ] Push notifications (FCM + `flutter_local_notifications`) — task reminders, daily nudges, streak alerts
-- [ ] Haptic feedback + micro-animations — `HapticFeedback.lightImpact()` on swipe, confetti on completion
+- [x] Haptic feedback — swipe threshold crossing (medium), swipe complete (light), snap-back (selection), timer start/pause/complete, celebration burst, nav bar tap
 - [ ] Streaks & milestones gamification — compassionate (Finch-style), not punitive
 - [ ] Shimmer loading screens — replace `CircularProgressIndicator` with shimmer placeholders
 - [ ] Timer state persistence — save to local storage, restore on app resume
@@ -196,8 +203,11 @@ Two group types now live: **Event Driven** (premium-only creation) and **Friends
 - [ ] Weekly summary notification
 
 ### Compliance
-- [ ] ATT for iOS (required for AdMob) — `app_tracking_transparency` package
-- [ ] GDPR consent management — consent banner on first launch, gate analytics/ads on consent
+- [x] ATT for iOS — `app_tracking_transparency` package, `NSUserTrackingUsageDescription` in Info.plist, ATT prompt in `consent_service.dart`
+- [x] Android AD_ID permission in AndroidManifest.xml
+- [x] GDPR consent via Google UMP — `consent_service.dart` + `consent_provider.dart`, ads gated on consent
+- [x] "Manage Privacy" in profile settings — re-shows consent form
+- [x] Privacy policy updated with GDPR section (legal basis, data retention, rights, ICO reference)
 - [ ] Health-adjacent disclaimers — ADHD is health-adjacent; may need store listing disclaimers
 
 ### Internationalisation
@@ -269,6 +279,7 @@ _Update this section as decisions are made_
 | 2026-03-17 | Hard paywall: 7-day trial → limited free with ads → premium | Research: 78% trial start rate. Free fallback = task list + groups with ads. Premium gates What Now swipe + timer. Groups free for viral growth. |
 | 2026-03-17 | £3.99/mo, £29.99/yr, £59.99 lifetime | Below competitors (Tiimo £7.99, Finch £4.99). Single tier reduces ADHD choice paralysis. Lifetime for subscription-anxious users. |
 | 2026-03-19 | Groups Expansion Phase 1: Event Driven + F&F leaderboard | Two group types: Event Driven (premium-only creation, task pool with assign/claim) and Friends & Family (free, configurable leaderboard). Group tasks sync to personal list. Phase 2 = deep links, push notifications, realtime. |
+| 2026-03-22 | GDPR + ATT + RevenueCat implementation | Google UMP for GDPR consent, ATT for iOS tracking prompt, RevenueCat for IAP. Stripe fully removed. What Now + Timer gated behind premium. Free users get unlimited tasks + groups with ads. |
 
 ### Research-Backed Recommendations (2026-03-15)
 

@@ -66,6 +66,8 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<key>NSUserTrackingUsageDescription</key>
+		<string>This allows us to show you relevant ads. You can change this in Settings at any time.</string>
 		<key>GADApplicationIdentifier</key>
 		<string>ca-app-pub-3940256099942544~1458002511</string>
 		<key>SKAdNetworkItems</key>

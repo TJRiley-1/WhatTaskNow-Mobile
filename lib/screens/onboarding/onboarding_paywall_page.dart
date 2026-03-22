@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import '../../config/onboarding_theme.dart';
+import '../../services/revenue_cat_service.dart';
 
-class OnboardingPaywallPage extends StatefulWidget {
+class OnboardingPaywallPage extends ConsumerStatefulWidget {
   final String? goal;
-  final VoidCallback onStartTrial;
+  final VoidCallback onPurchaseSuccess;
   final VoidCallback onContinueFree;
 
   const OnboardingPaywallPage({
     super.key,
     this.goal,
-    required this.onStartTrial,
+    required this.onPurchaseSuccess,
     required this.onContinueFree,
   });
 
   @override
-  State<OnboardingPaywallPage> createState() => _OnboardingPaywallPageState();
+  ConsumerState<OnboardingPaywallPage> createState() =>
+      _OnboardingPaywallPageState();
 }
 
-class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
+class _OnboardingPaywallPageState
+    extends ConsumerState<OnboardingPaywallPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _fadeController;
   int _selectedPlan = 1; // 0=monthly, 1=yearly, 2=lifetime
+  List<Package> _packages = [];
+  bool _loading = true;
+  bool _purchasing = false;
 
   @override
   void initState() {
@@ -30,12 +38,106 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     )..forward();
+    _loadOfferings();
   }
 
   @override
   void dispose() {
     _fadeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadOfferings() async {
+    try {
+      final offerings = await RevenueCatService.instance.getOfferings();
+      final current = offerings?.current;
+      if (current != null && mounted) {
+        setState(() {
+          _packages = current.availablePackages;
+          _loading = false;
+        });
+      } else {
+        setState(() => _loading = false);
+      }
+    } catch (e) {
+      debugPrint('Paywall: error loading offerings: $e');
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  String _priceForIndex(int index) {
+    if (_packages.isEmpty) {
+      // Fallback prices if RC not configured yet
+      return switch (index) {
+        0 => '\u00A33.99/mo',
+        1 => '\u00A329.99/yr',
+        2 => '\u00A359.99',
+        _ => '',
+      };
+    }
+    // Map by package type
+    for (final pkg in _packages) {
+      if (index == 0 && pkg.packageType == PackageType.monthly) {
+        return pkg.storeProduct.priceString;
+      }
+      if (index == 1 && pkg.packageType == PackageType.annual) {
+        return pkg.storeProduct.priceString;
+      }
+      if (index == 2 && pkg.packageType == PackageType.lifetime) {
+        return pkg.storeProduct.priceString;
+      }
+    }
+    return switch (index) {
+      0 => '\u00A33.99/mo',
+      1 => '\u00A329.99/yr',
+      2 => '\u00A359.99',
+      _ => '',
+    };
+  }
+
+  Package? _selectedPackage() {
+    if (_packages.isEmpty) return null;
+    final targetType = switch (_selectedPlan) {
+      0 => PackageType.monthly,
+      1 => PackageType.annual,
+      2 => PackageType.lifetime,
+      _ => PackageType.annual,
+    };
+    try {
+      return _packages.firstWhere((p) => p.packageType == targetType);
+    } catch (_) {
+      return _packages.first;
+    }
+  }
+
+  Future<void> _handlePurchase() async {
+    final package = _selectedPackage();
+    if (package == null) {
+      // RC not configured — proceed anyway (dev mode)
+      widget.onPurchaseSuccess();
+      return;
+    }
+
+    setState(() => _purchasing = true);
+    try {
+      final success =
+          await RevenueCatService.instance.purchasePackage(package);
+      if (mounted) {
+        if (success) {
+          widget.onPurchaseSuccess();
+        } else {
+          // Purchase was cancelled — stay on page
+          setState(() => _purchasing = false);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _purchasing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Purchase failed: $e')),
+        );
+      }
+    }
   }
 
   String get _subtitle {
@@ -106,29 +208,36 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
 
             const SizedBox(height: 24),
 
-            // Pricing options
-            _PricingOption(
-              label: 'Monthly',
-              price: '\u00A33.99/mo',
-              isSelected: _selectedPlan == 0,
-              onTap: () => setState(() => _selectedPlan = 0),
-            ),
-            const SizedBox(height: 8),
-            _PricingOption(
-              label: 'Yearly',
-              price: '\u00A329.99/yr',
-              badge: 'Save 37%',
-              isSelected: _selectedPlan == 1,
-              onTap: () => setState(() => _selectedPlan = 1),
-            ),
-            const SizedBox(height: 8),
-            _PricingOption(
-              label: 'Lifetime',
-              price: '\u00A359.99',
-              badge: 'Best value',
-              isSelected: _selectedPlan == 2,
-              onTap: () => setState(() => _selectedPlan = 2),
-            ),
+            if (_loading)
+              const Padding(
+                padding: EdgeInsets.all(24),
+                child: CircularProgressIndicator(),
+              )
+            else ...[
+              // Pricing options
+              _PricingOption(
+                label: 'Monthly',
+                price: _priceForIndex(0),
+                isSelected: _selectedPlan == 0,
+                onTap: () => setState(() => _selectedPlan = 0),
+              ),
+              const SizedBox(height: 8),
+              _PricingOption(
+                label: 'Yearly',
+                price: _priceForIndex(1),
+                badge: 'Save 37%',
+                isSelected: _selectedPlan == 1,
+                onTap: () => setState(() => _selectedPlan = 1),
+              ),
+              const SizedBox(height: 8),
+              _PricingOption(
+                label: 'Lifetime',
+                price: _priceForIndex(2),
+                badge: 'Best value',
+                isSelected: _selectedPlan == 2,
+                onTap: () => setState(() => _selectedPlan = 2),
+              ),
+            ],
 
             const SizedBox(height: 32),
 
@@ -136,7 +245,7 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
               width: double.infinity,
               height: 56,
               child: FilledButton(
-                onPressed: widget.onStartTrial,
+                onPressed: _purchasing ? null : _handlePurchase,
                 style: FilledButton.styleFrom(
                   backgroundColor:
                       isDark ? OnboardingTheme.gold : cs.onSurface,
@@ -149,7 +258,14 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                child: const Text('Start Free Trial'),
+                child: _purchasing
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Start Free Trial'),
               ),
             ),
 
@@ -172,10 +288,10 @@ class _OnboardingPaywallPageState extends State<OnboardingPaywallPage>
   }
 
   static const _features = [
-    'Swipe to Choose',
+    'What Now? swipe',
     'Focus timer',
-    'Unlimited tasks',
     'No ads',
+    'Create event groups',
   ];
 }
 
@@ -226,7 +342,8 @@ class _PricingOption extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(14),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: Row(
               children: [
                 Icon(
@@ -251,10 +368,11 @@ class _PricingOption extends StatelessWidget {
                 ),
                 if (badge != null) ...[
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: OnboardingTheme.gold.withValues(alpha: 0.15),
+                      color:
+                          OnboardingTheme.gold.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../config/ranks.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../services/consent_service.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -302,6 +303,15 @@ class ProfileScreen extends ConsumerWidget {
                           context.go('/onboarding');
                         }
                       }
+                    },
+                  ),
+
+                  const SizedBox(height: 10),
+                  _SettingsItem(
+                    icon: Icons.privacy_tip_rounded,
+                    label: 'Manage Privacy',
+                    onTap: () async {
+                      await ConsentService.instance.showPrivacyOptions();
                     },
                   ),
 

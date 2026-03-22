@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../config/ad_config.dart';
+import '../providers/consent_provider.dart';
 import '../providers/premium_provider.dart';
 
 class BannerAdWidget extends ConsumerStatefulWidget {
@@ -18,10 +19,11 @@ class _BannerAdWidgetState extends ConsumerState<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    // Ad loading is deferred to build() so we can check consent via ref
   }
 
   void _loadAd() {
+    if (_bannerAd != null) return;
     _bannerAd = BannerAd(
       adUnitId: AdConfig.bannerAdUnitId,
       size: AdSize.banner,
@@ -46,7 +48,18 @@ class _BannerAdWidgetState extends ConsumerState<BannerAdWidget> {
   @override
   Widget build(BuildContext context) {
     final isPremium = ref.watch(isPremiumProvider);
-    if (isPremium || !_isLoaded || _bannerAd == null) {
+    final canShowAds = ref.watch(canShowAdsProvider);
+
+    if (isPremium || !canShowAds) {
+      return const SizedBox.shrink();
+    }
+
+    // Load ad on first eligible build
+    if (_bannerAd == null) {
+      _loadAd();
+    }
+
+    if (!_isLoaded || _bannerAd == null) {
       return const SizedBox.shrink();
     }
 

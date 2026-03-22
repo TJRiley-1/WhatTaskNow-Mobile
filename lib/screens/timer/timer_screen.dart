@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,10 +39,12 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   }
 
   void _start() {
+    HapticFeedback.mediumImpact();
     setState(() => _running = true);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_secondsRemaining <= 0) {
         timer.cancel();
+        HapticFeedback.heavyImpact();
         setState(() {
           _running = false;
           _completed = true;
@@ -53,6 +56,7 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   }
 
   void _pause() {
+    HapticFeedback.lightImpact();
     _timer?.cancel();
     setState(() => _running = false);
   }

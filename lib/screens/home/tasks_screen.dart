@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/task.dart';
 import '../../providers/filter_provider.dart';
-import '../../providers/premium_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
 
@@ -35,7 +34,6 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final canAdd = ref.watch(canAddTaskProvider);
     const gold = Color(0xFFC9A84C);
 
     return Scaffold(
@@ -117,14 +115,8 @@ class _TasksScreenState extends ConsumerState<TasksScreen>
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          if (canAdd) {
-            context.push('/add-task');
-          } else {
-            context.push('/premium');
-          }
-        },
-        child: Icon(canAdd ? Icons.add_rounded : Icons.lock_rounded),
+        onPressed: () => context.push('/add-task'),
+        child: const Icon(Icons.add_rounded),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );

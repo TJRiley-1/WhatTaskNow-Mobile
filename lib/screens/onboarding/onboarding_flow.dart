@@ -167,15 +167,7 @@ class _OnboardingFlowState extends ConsumerState<OnboardingFlow> {
                   // Screen 6: Paywall
                   OnboardingPaywallPage(
                     goal: state.goal,
-                    onStartTrial: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Coming soon — trial will start here'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                      _nextPage();
-                    },
+                    onPurchaseSuccess: _nextPage,
                     onContinueFree: _nextPage,
                   ),
 

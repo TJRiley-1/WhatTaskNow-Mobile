@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -6,6 +7,7 @@ import '../../models/task.dart';
 import '../../providers/filter_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/premium_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/swipe_card.dart';
 
@@ -44,6 +46,7 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
   }
 
   void _showChosenSheet(Task task) {
+    HapticFeedback.mediumImpact();
     final cs = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final gold = const Color(0xFFC9A84C);
@@ -213,6 +216,13 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final isPremium = ref.watch(isPremiumProvider);
+
+    // Gate: free users see upsell
+    if (!isPremium) {
+      return _WhatNowUpsell();
+    }
+
     final tasksAsync = ref.watch(filteredTasksProvider);
     final user = ref.watch(currentUserProvider);
 
@@ -686,4 +696,77 @@ class _CycleFilterPill extends StatelessWidget {
   }
 }
 
+class _WhatNowUpsell extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const gold = Color(0xFFC9A84C);
 
+    return Scaffold(
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: gold.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Icon(Icons.shuffle_rounded,
+                      size: 40, color: gold),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Unlock What Now?',
+                  style: GoogleFonts.playfairDisplay(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    color: cs.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Swipe through tasks one at a time and let the app decide what to do. No more staring at a long list.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    color: cs.onSurfaceVariant,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed: () =>
+                        GoRouter.of(context).push('/premium'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: isDark ? gold : cs.onSurface,
+                      foregroundColor:
+                          isDark ? cs.onPrimary : Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      textStyle: GoogleFonts.dmSans(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    child: const Text('Start Free Trial'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

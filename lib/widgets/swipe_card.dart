@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/task.dart';
 
@@ -25,6 +26,7 @@ class SwipeCard extends StatefulWidget {
 class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   Offset _offset = Offset.zero;
   bool _userHasInteracted = false;
+  bool _hapticFired = false;
 
   static const _threshold = 100.0;
 
@@ -89,6 +91,13 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     setState(() {
       _offset += details.delta;
     });
+    // Haptic when crossing threshold
+    if (_offset.dx.abs() > _threshold && !_hapticFired) {
+      _hapticFired = true;
+      HapticFeedback.mediumImpact();
+    } else if (_offset.dx.abs() < _threshold && _hapticFired) {
+      _hapticFired = false;
+    }
   }
 
   void _onPanEnd(DragEndDetails details) {
@@ -97,6 +106,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     } else if (_offset.dx < -_threshold) {
       _animateOff(-1);
     } else {
+      // Snap back with light haptic
+      HapticFeedback.selectionClick();
       setState(() {
         _offset = Offset.zero;
       });
@@ -104,6 +115,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   }
 
   void _animateOff(int direction) {
+    HapticFeedback.lightImpact();
     setState(() {
       _offset = Offset(direction * 500, _offset.dy);
     });
