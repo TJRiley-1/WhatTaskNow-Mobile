@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1098495875249",
+    "project_id": "whattasknow",
+    "storage_bucket": "whattasknow.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1098495875249:android:1086296d698fcc9eedaa90",
+        "android_client_info": {
+          "package_name": "com.whatnow.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAD7Hh8vw9RfTJN98VRuwJ-fF8va7F7PZ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

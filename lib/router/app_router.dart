@@ -91,6 +91,7 @@ GoRouter createRouter(AuthNotifier authNotifier) {
             taskName: data['taskName'] as String,
             points: data['points'] as int,
             timeSpent: data['timeSpent'] as int,
+            newMilestones: (data['newMilestones'] as List<int>?) ?? const [],
           );
         },
       ),

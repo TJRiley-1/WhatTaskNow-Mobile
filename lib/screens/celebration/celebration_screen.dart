@@ -7,12 +7,14 @@ class CelebrationScreen extends StatefulWidget {
   final String taskName;
   final int points;
   final int timeSpent;
+  final List<int> newMilestones;
 
   const CelebrationScreen({
     super.key,
     required this.taskName,
     required this.points,
     required this.timeSpent,
+    this.newMilestones = const [],
   });
 
   @override
@@ -181,6 +183,33 @@ class _CelebrationScreenState extends State<CelebrationScreen>
                             color: theme.colorScheme.outline,
                           ),
                         ),
+                        if (widget.newMilestones.isNotEmpty) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFC9A84C)
+                                  .withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.local_fire_department_rounded,
+                                    color: Color(0xFFC9A84C), size: 24),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${widget.newMilestones.first}-day streak!',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    color: const Color(0xFFC9A84C),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 40),
                         FilledButton(
                           onPressed: () => context.go('/'),

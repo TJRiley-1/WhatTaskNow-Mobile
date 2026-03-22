@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../config/onboarding_theme.dart';
+import '../../services/notification_service.dart';
 
 class OnboardingNotificationsPage extends StatefulWidget {
   final void Function(bool wantsNotifications) onSelected;
@@ -126,7 +127,18 @@ class _OnboardingNotificationsPageState
               width: double.infinity,
               height: 56,
               child: FilledButton(
-                onPressed: () => widget.onSelected(true),
+                onPressed: () async {
+                  final granted =
+                      await NotificationService.instance.requestPermission();
+                  if (granted) {
+                    // Schedule a daily reminder at 9am and streak reminder at 8pm
+                    await NotificationService.instance
+                        .scheduleDailyReminder(hour: 9, minute: 0);
+                    await NotificationService.instance
+                        .scheduleStreakReminder(hour: 20, minute: 0);
+                  }
+                  widget.onSelected(granted);
+                },
                 style: FilledButton.styleFrom(
                   backgroundColor:
                       isDark ? OnboardingTheme.gold : cs.onSurface,

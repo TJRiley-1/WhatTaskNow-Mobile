@@ -8,6 +8,8 @@ import '../../providers/filter_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/premium_provider.dart';
+import '../../providers/streak_provider.dart';
+import '../../services/streak_service.dart';
 import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/shimmer_placeholder.dart';
 import '../../widgets/swipe_card.dart';
@@ -305,41 +307,49 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
 
             const SizedBox(height: 16),
 
-            // Streak bar (placeholder)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                decoration: BoxDecoration(
-                  color: gold.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: gold.withValues(alpha: 0.15)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.local_fire_department_rounded,
-                        size: 18, color: gold),
-                    const SizedBox(width: 8),
-                    Text(
-                      '0 day streak',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: gold,
-                      ),
+            // Streak bar
+            Consumer(
+              builder: (context, ref, _) {
+                final streakAsync = ref.watch(streakProvider);
+                final streak = streakAsync.valueOrNull ?? const StreakData();
+                final count = streak.currentStreak;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: gold.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border:
+                          Border.all(color: gold.withValues(alpha: 0.15)),
                     ),
-                    const Spacer(),
-                    Text(
-                      'Keep going!',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: cs.onSurfaceVariant,
-                      ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.local_fire_department_rounded,
+                            size: 18, color: gold),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$count day${count == 1 ? '' : 's'} streak',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: gold,
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          streak.message,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 12),

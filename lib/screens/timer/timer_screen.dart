@@ -10,7 +10,9 @@ import '../../models/task.dart';
 import '../../config/ranks.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/streak_provider.dart';
 import '../../providers/task_provider.dart';
+import '../../services/streak_service.dart';
 
 class TimerScreen extends ConsumerStatefulWidget {
   final Task task;
@@ -215,14 +217,19 @@ class _TimerScreenState extends ConsumerState<TimerScreen>
             updatedAt: DateTime.now().toUtc(),
           ));
 
+      // Record streak and check for new milestones
+      final newMilestones = await StreakService.instance.recordStreak();
+
       ref.invalidate(taskListProvider);
       ref.invalidate(profileProvider);
+      ref.invalidate(streakProvider);
 
       if (mounted) {
         context.go('/celebration', extra: {
           'taskName': task.name,
           'points': points,
           'timeSpent': timeSpent > 0 ? timeSpent : task.time,
+          if (newMilestones.isNotEmpty) 'newMilestones': newMilestones,
         });
       }
     } catch (e) {
