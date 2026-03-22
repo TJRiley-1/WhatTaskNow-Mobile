@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../models/task.dart';
 import '../../config/ranks.dart';
@@ -20,31 +21,115 @@ class TimerScreen extends ConsumerStatefulWidget {
   ConsumerState<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends ConsumerState<TimerScreen> {
+class _TimerScreenState extends ConsumerState<TimerScreen>
+    with WidgetsBindingObserver {
   late int _secondsRemaining;
   Timer? _timer;
   bool _running = false;
   bool _completed = false;
+  DateTime? _lastTickTime;
+
+  static const _prefTaskId = 'timer_task_id';
+  static const _prefSecondsRemaining = 'timer_seconds_remaining';
+  static const _prefLastTickTime = 'timer_last_tick_time';
+  static const _prefWasRunning = 'timer_was_running';
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _secondsRemaining = widget.task.time * 60;
+    _restoreTimerState();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _saveTimerState();
+    } else if (state == AppLifecycleState.resumed) {
+      _restoreElapsedTime();
+    }
+  }
+
+  Future<void> _saveTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefTaskId, widget.task.id);
+    await prefs.setInt(_prefSecondsRemaining, _secondsRemaining);
+    await prefs.setString(
+        _prefLastTickTime, DateTime.now().toUtc().toIso8601String());
+    await prefs.setBool(_prefWasRunning, _running);
+  }
+
+  Future<void> _restoreTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    final savedTaskId = prefs.getString(_prefTaskId);
+    if (savedTaskId != widget.task.id) return;
+
+    final savedSeconds = prefs.getInt(_prefSecondsRemaining);
+    final savedTime = prefs.getString(_prefLastTickTime);
+    final wasRunning = prefs.getBool(_prefWasRunning) ?? false;
+
+    if (savedSeconds != null && savedTime != null) {
+      final lastTick = DateTime.tryParse(savedTime);
+      if (lastTick != null && wasRunning) {
+        final elapsed = DateTime.now().toUtc().difference(lastTick).inSeconds;
+        final adjusted = (savedSeconds - elapsed).clamp(0, widget.task.time * 60);
+        setState(() => _secondsRemaining = adjusted);
+        if (adjusted > 0) {
+          _start();
+        } else {
+          setState(() => _completed = true);
+        }
+      } else {
+        setState(() => _secondsRemaining = savedSeconds);
+      }
+    }
+  }
+
+  void _restoreElapsedTime() {
+    if (!_running || _lastTickTime == null) return;
+    final elapsed =
+        DateTime.now().toUtc().difference(_lastTickTime!).inSeconds;
+    if (elapsed > 0) {
+      setState(() {
+        _secondsRemaining = (_secondsRemaining - elapsed)
+            .clamp(0, widget.task.time * 60);
+        if (_secondsRemaining <= 0) {
+          _timer?.cancel();
+          _running = false;
+          _completed = true;
+          HapticFeedback.heavyImpact();
+        }
+      });
+    }
+  }
+
+  Future<void> _clearTimerState() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_prefTaskId);
+    await prefs.remove(_prefSecondsRemaining);
+    await prefs.remove(_prefLastTickTime);
+    await prefs.remove(_prefWasRunning);
+  }
+
   void _start() {
     HapticFeedback.mediumImpact();
+    _lastTickTime = DateTime.now().toUtc();
     setState(() => _running = true);
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _lastTickTime = DateTime.now().toUtc();
       if (_secondsRemaining <= 0) {
         timer.cancel();
         HapticFeedback.heavyImpact();
+        _clearTimerState();
         setState(() {
           _running = false;
           _completed = true;
@@ -62,6 +147,8 @@ class _TimerScreenState extends ConsumerState<TimerScreen> {
   }
 
   void _markComplete() async {
+    _timer?.cancel();
+    _clearTimerState();
     final user = ref.read(currentUserProvider);
     if (user == null) return;
 

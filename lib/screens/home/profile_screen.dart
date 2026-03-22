@@ -8,6 +8,7 @@ import '../../config/ranks.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../services/consent_service.dart';
+import '../../widgets/shimmer_placeholder.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -24,7 +25,7 @@ class ProfileScreen extends ConsumerWidget {
     return Scaffold(
       body: SafeArea(
         child: profileAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const ShimmerProfile(),
           error: (error, _) => Center(child: Text('Error: $error')),
           data: (profile) {
             if (profile == null) {

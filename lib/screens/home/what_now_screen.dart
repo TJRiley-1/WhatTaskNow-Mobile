@@ -9,6 +9,7 @@ import '../../providers/task_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/premium_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
+import '../../widgets/shimmer_placeholder.dart';
 import '../../widgets/swipe_card.dart';
 
 class WhatNowScreen extends ConsumerStatefulWidget {
@@ -443,8 +444,7 @@ class _WhatNowScreenState extends ConsumerState<WhatNowScreen> {
             // Main content
             Expanded(
               child: tasksAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
+                loading: () => const ShimmerSwipeCard(),
                 error: (error, _) =>
                     Center(child: Text('Error: $error')),
                 data: (tasks) {

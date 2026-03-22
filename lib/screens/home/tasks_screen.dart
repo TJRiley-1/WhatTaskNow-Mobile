@@ -6,6 +6,7 @@ import '../../models/task.dart';
 import '../../providers/filter_provider.dart';
 import '../../providers/task_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
+import '../../widgets/shimmer_placeholder.dart';
 
 class TasksScreen extends ConsumerStatefulWidget {
   const TasksScreen({super.key});
@@ -131,7 +132,7 @@ class _OpenTasksTab extends ConsumerWidget {
     final tasksAsync = ref.watch(openTasksProvider);
 
     return tasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ShimmerTaskList(),
       error: (error, _) => Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -192,7 +193,7 @@ class _CompletedTasksTab extends ConsumerWidget {
     const gold = Color(0xFFC9A84C);
 
     return tasksAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator()),
+      loading: () => const ShimmerTaskList(),
       error: (error, _) => Center(child: Text('Error: $error')),
       data: (tasks) {
         if (tasks.isEmpty) {

@@ -191,8 +191,8 @@ Two group types now live: **Event Driven** (premium-only creation) and **Friends
 - [ ] Push notifications (FCM + `flutter_local_notifications`) — task reminders, daily nudges, streak alerts
 - [x] Haptic feedback — swipe threshold crossing (medium), swipe complete (light), snap-back (selection), timer start/pause/complete, celebration burst, nav bar tap
 - [ ] Streaks & milestones gamification — compassionate (Finch-style), not punitive
-- [ ] Shimmer loading screens — replace `CircularProgressIndicator` with shimmer placeholders
-- [ ] Timer state persistence — save to local storage, restore on app resume
+- [x] Shimmer loading screens — task list, swipe card, profile use shimmer placeholders instead of spinners
+- [x] Timer state persistence — saves to SharedPreferences, restores on app resume/reopen with elapsed time calculation
 
 ### Engagement Widgets
 - [ ] "Next Task" home screen widget (`home_widget` package)
